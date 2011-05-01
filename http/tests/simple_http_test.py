@@ -51,6 +51,48 @@ class SimpleHttpTest(util.HttpTestBase, unittest.TestCase):
         self.assertRaises(http.BadRequestData,
                           con.request, 'POST', '/', body=1)
 
+    def test_no_keepalive_http_1_0(self):
+        expected_request_one = """GET /remote/.hg/requires HTTP/1.1
+Host: localhost
+range: bytes=0-
+accept-encoding: identity
+accept: application/mercurial-0.1
+user-agent: mercurial/proto-1.0
+
+""".replace('\n', '\r\n')
+        expected_response_headers = """HTTP/1.0 200 OK
+Server: SimpleHTTP/0.6 Python/2.6.1
+Date: Sun, 01 May 2011 13:56:57 GMT
+Content-type: application/octet-stream
+Content-Length: 33
+Last-Modified: Sun, 01 May 2011 13:56:56 GMT
+
+""".replace('\n', '\r\n')
+        expected_response_body = """revlogv1
+store
+fncache
+dotencode
+"""
+        con = http.HTTPConnection('localhost:9999')
+        con._connect()
+        con.sock.data = [expected_response_headers, expected_response_body]
+        con.request('GET', '/remote/.hg/requires',
+                    headers={'accept-encoding': 'identity',
+                             'range': 'bytes=0-',
+                             'accept': 'application/mercurial-0.1',
+                             'user-agent': 'mercurial/proto-1.0',
+                             })
+        self.assertStringEqual(expected_request_one, con.sock.sent)
+        self.assertEqual(con.sock.closed, False)
+        self.assertNotEqual(con.sock.data, [])
+        self.assert_(con.busy())
+        resp = con.getresponse()
+        self.assertStringEqual(resp.read(), expected_response_body)
+        self.failIf(con.busy())
+        self.assertEqual(con.sock, None)
+        self.assertEqual(resp.sock.data, [])
+        self.assert_(resp.sock.closed)
+
     def test_multiline_header(self):
         con = http.HTTPConnection('1.2.3.4:80')
         con._connect()
