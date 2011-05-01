@@ -149,6 +149,8 @@ class HTTPResponse(object):
             length = len(self._body) - self._read_location
         r = self._body[self._read_location:self._read_location + length]
         self._read_location += len(r)
+        if self.complete() and self.will_close:
+            self.sock.close()
         return r
 
     def _select(self):
@@ -545,18 +547,21 @@ class HTTPConnection(object):
             logger.info('stopped sending request early, '
                          'will close the socket to be safe.')
             response.will_close = True
-        if response.will_close and complete:
-            self.close()
+        if response.will_close:
+            # The socket will be closed by the response, so we disown
+            # the socket
+            self.sock = None
         self._current_response = response
 
     def getresponse(self):
         if self._current_response is None:
             raise httplib.ResponseNotReady()
         r = self._current_response
-        if r.complete():
-            self._current_response = None
         while r.headers is None:
             r._select()
+        if r.complete() or r.will_close:
+            self.sock = None
+            self._current_response = None
         return r
 
 
