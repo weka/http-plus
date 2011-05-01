@@ -271,7 +271,9 @@ class HTTPResponse(object):
         headers = rfc822.Message(cStringIO.StringIO(hdrs))
         if HDR_CONTENT_LENGTH in headers:
             self._content_len = int(headers[HDR_CONTENT_LENGTH])
-        if HDR_CONNECTION_CTRL in headers:
+        if self.http_version == HTTP_VER_1_0:
+            self.will_close = True
+        elif HDR_CONNECTION_CTRL in headers:
             self.will_close = (
                 headers[HDR_CONNECTION_CTRL].lower() == CONNECTION_CLOSE)
             if self._content_len == 0:
