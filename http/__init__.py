@@ -391,8 +391,7 @@ class HTTPConnection(object):
         to the server, in which case this will be useful to detect if
         any of those connections is ready for use.
         """
-        return not (self._current_response is None
-                    or self._current_response.complete())
+        return not self._current_response is None
 
     def request(self, method, url, body=None, headers={},
                 expect_continue=False):
@@ -407,12 +406,9 @@ class HTTPConnection(object):
         """
         cr = self._current_response
         if cr is not None:
-            if cr.complete():
-                self._current_response = None
-                if cr.will_close:
-                    self.close()
-            else:
-                raise httplib.CannotSendRequest()
+            raise httplib.CannotSendRequest(
+                'Can not send another request before '
+                'current response is read!')
 
         logger.info('sending %s request for %s to %s on port %s',
                     method, url, self.host, self.port)
