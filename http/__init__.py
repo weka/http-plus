@@ -496,7 +496,10 @@ class HTTPConnection(object):
             blocking_on_continue = False
             if expect_continue and not outgoing_headers and not (
                 response and response.headers):
-                logger.info('waiting for continue response from server')
+                logger.info(
+                    'waiting up to %s seconds for'
+                    ' continue response from server',
+                    self.continue_timeout)
                 select_timeout = self.continue_timeout
                 blocking_on_continue = True
                 out = False
