@@ -525,6 +525,31 @@ class HTTPConnection(object):
             # the response is already done...I think.
             was_first = first
 
+            # incoming data
+            if r:
+                try:
+                    data = r[0].recv(INCOMING_BUFFER_SIZE)
+                    if not data:
+                        logger.info('socket appears closed in read')
+                        outgoing_headers = body = None
+                        break
+                    if response is None:
+                        response = self.response_class(r[0], self.timeout)
+                    response._load_response(data)
+                    if (response._content_len == _LEN_CLOSE_IS_END
+                        and len(data) == 0):
+                        response._content_len = len(response._body)
+                    if response.complete():
+                        w = []
+                        response.will_close = True
+                except socket.error, e:
+                    if e[0] != errno.EPIPE and not was_first:
+                        raise
+                    if (response._content_len
+                        and response._content_len != _LEN_CLOSE_IS_END):
+                        outgoing_headers = sent_data + outgoing_headers
+                        reconnect('read')
+
             # outgoing data
             if w and out:
                 try:
@@ -564,28 +589,6 @@ class HTTPConnection(object):
                     body = out[amt:]
                 else:
                     outgoing_headers = out[amt:]
-
-            # incoming data
-            if r:
-                try:
-                    data = r[0].recv(INCOMING_BUFFER_SIZE)
-                    if not data:
-                        logger.info('socket appears closed in read')
-                        outgoing_headers = body = None
-                        break
-                    if response is None:
-                        response = self.response_class(r[0], self.timeout)
-                    response._load_response(data)
-                    if (response._content_len == _LEN_CLOSE_IS_END
-                        and len(data) == 0):
-                        response._content_len = len(response._body)
-                except socket.error, e:
-                    if e[0] != errno.EPIPE and not was_first:
-                        raise
-                    if (response._content_len
-                        and response._content_len != _LEN_CLOSE_IS_END):
-                        outgoing_headers = sent_data + outgoing_headers
-                        reconnect('read')
 
         # close if the server response said to or responded before eating
         # the whole request
