@@ -442,7 +442,7 @@ class HTTPConnection(object):
         """
         return not self._current_response is None
 
-    def request(self, method, url, body=None, headers={},
+    def request(self, method, path, body=None, headers={},
                 expect_continue=False):
         """Send a request to the server.
 
@@ -460,7 +460,7 @@ class HTTPConnection(object):
                 'current response is read!')
 
         logger.info('sending %s request for %s to %s on port %s',
-                    method, url, self.host, self.port)
+                    method, path, self.host, self.port)
         hdrs = dict((k.lower(), (k, v)) for k, v in headers.iteritems())
         if hdrs.get('expect', ('', ''))[1].lower() == '100-continue':
             expect_continue = True
@@ -480,7 +480,7 @@ class HTTPConnection(object):
 
         self._connect()
         outgoing_headers = self.buildheaders(
-            method, url, hdrs, self.http_version)
+            method, path, hdrs, self.http_version)
         response = None
         first = True
 
