@@ -339,6 +339,7 @@ class HTTPConnection(object):
         self.host = host
         self.sock = None
         self._current_response = None
+        self._current_response_taken = False
         if proxy_hostport is None:
             self._proxy_host = self._proxy_port = None
         else:
@@ -440,7 +441,18 @@ class HTTPConnection(object):
         to the server, in which case this will be useful to detect if
         any of those connections is ready for use.
         """
-        return not self._current_response is None
+        cr = self._current_response
+        if cr is not None:
+            if self._current_response_taken:
+                if cr.will_close:
+                    self.sock = None
+                    self._current_response = None
+                    return False
+                elif cr.complete():
+                    self._current_response = None
+                    return False
+            return True
+        return False
 
     def request(self, method, path, body=None, headers={},
                 expect_continue=False):
@@ -453,11 +465,11 @@ class HTTPConnection(object):
         available. Use the `getresponse()` method to retrieve the
         response.
         """
-        cr = self._current_response
-        if cr is not None:
+        if self.busy():
             raise httplib.CannotSendRequest(
                 'Can not send another request before '
                 'current response is read!')
+        self._current_response_taken = False
 
         logger.info('sending %s request for %s to %s on port %s',
                     method, path, self.host, self.port)
@@ -615,6 +627,8 @@ class HTTPConnection(object):
         if r.complete() or r.will_close:
             self.sock = None
             self._current_response = None
+        else:
+            self._current_response_taken = True
         return r
 
 
