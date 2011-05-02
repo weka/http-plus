@@ -42,7 +42,7 @@ class SimpleHttpTest(util.HttpTestBase, unittest.TestCase):
         con.sock.data = server_data
         con.request('GET', '/')
 
-        self.assertEqual(expected_req, con.sock.sent)
+        self.assertStringEqual(expected_req, con.sock.sent)
         self.assertEqual(expected_data, con.getresponse().read())
 
     def test_broken_data_obj(self):
@@ -53,7 +53,7 @@ class SimpleHttpTest(util.HttpTestBase, unittest.TestCase):
 
     def test_no_keepalive_http_1_0(self):
         expected_request_one = """GET /remote/.hg/requires HTTP/1.1
-Host: localhost
+Host: localhost:9999
 range: bytes=0-
 accept-encoding: identity
 accept: application/mercurial-0.1
@@ -197,7 +197,7 @@ dotencode
                          '\r\n\r\n'
                          '1234567890'],
                         ('GET / HTTP/1.1\r\n'
-                         'Host: ::1\r\n'
+                         'Host: [::1]:8221\r\n'
                          'accept-encoding: identity\r\n\r\n'),
                         '1234567890')
         self._run_simple_test('::2',

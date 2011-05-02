@@ -392,9 +392,26 @@ class HTTPConnection(object):
         sock.setblocking(0)
         self.sock = sock
 
-    def buildheaders(self, method, url, headers, http_ver):
-        outgoing = ['%s %s %s%s' % (method, url, http_ver, EOL)]
-        headers['host'] = ('Host', self.host)
+    def buildheaders(self, method, path, headers, http_ver):
+        if self.ssl and self.port == 443 or self.port == 80:
+            # default port for protocol, so leave it out
+            hdrhost = self.host
+        else:
+            # include nonstandard port in header
+            if ':' in self.host:  # must be IPv6
+                hdrhost = '[%s]:%d' % (self.host, self.port)
+            else:
+                hdrhost = '%s:%d' % (self.host, self.port)
+        if self._proxy_host and not self.ssl:
+            # When talking to a regular http proxy we must send the
+            # full URI, but in all other cases we must not (although
+            # technically RFC 2616 says servers must accept our
+            # request if we screw up, experimentally few do that
+            # correctly.)
+            assert path[0] == '/', 'path must start with a /'
+            path = 'http://%s%s' % (hdrhost, path)
+        outgoing = ['%s %s %s%s' % (method, path, http_ver, EOL)]
+        headers['host'] = ('Host', hdrhost)
         headers[HDR_ACCEPT_ENCODING] = (HDR_ACCEPT_ENCODING, 'identity')
         for hdr, val in headers.itervalues():
             outgoing.append('%s: %s%s' % (hdr, val, EOL))

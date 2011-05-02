@@ -74,12 +74,12 @@ class ProxyHttpTest(util.HttpTestBase, unittest.TestCase):
                          ]
         con.request('GET', '/')
 
-        expected_req = ('GET / HTTP/1.1\r\n'
+        expected_req = ('GET http://1.2.3.4/ HTTP/1.1\r\n'
                         'Host: 1.2.3.4\r\n'
                         'accept-encoding: identity\r\n\r\n')
 
         self.assertEqual(('127.0.0.42', 4242), con.sock.sa)
-        self.assertEqual(expected_req, con.sock.sent)
+        self.assertStringEqual(expected_req, con.sock.sent)
         resp = con.getresponse()
         self.assertEqual('1234567890', resp.read())
         self.assertEqual(['Value', 'Other Value', 'One More!'],
