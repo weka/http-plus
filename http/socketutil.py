@@ -39,7 +39,7 @@ logger = logging.getLogger(__name__)
 
 try:
     import ssl
-    ssl.wrap_socket # make demandimporters load the module
+    ssl.wrap_socket  # make demandimporters load the module
     have_ssl = True
 except ImportError:
     import httplib
@@ -89,7 +89,7 @@ else:
         # backport the behavior from Python 2.6, which is to busy wait
         # on the socket instead of anything nice. Sigh.
         # See http://bugs.python.org/issue3890 for more info.
-        def recv(self, buflen = 1024, flags = 0):
+        def recv(self, buflen=1024, flags=0):
             """ssl-aware wrapper around socket.recv
             """
             if flags != 0:

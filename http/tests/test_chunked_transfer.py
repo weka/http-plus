@@ -61,14 +61,15 @@ class ChunkedTransferTest(util.HttpTestBase, unittest.TestCase):
                      "Thanks"]
 
         zz = 'zz\n'
-        con.request('POST', '/', body=cStringIO.StringIO((zz * (0x8010/3)) + 'end-of-body'))
+        con.request('POST', '/', body=cStringIO.StringIO(
+            (zz * (0x8010 / 3)) + 'end-of-body'))
         expected_req = ('POST / HTTP/1.1\r\n'
                         'transfer-encoding: chunked\r\n'
                         'Host: 1.2.3.4\r\n'
                         'accept-encoding: identity\r\n\r\n')
         expected_req += chunkedblock('zz\n' * (0x8000 / 3) + 'zz')
-        expected_req += chunkedblock('\n' + 'zz\n' * ((0x1b - len('end-of-body')) / 3)
-                                     + 'end-of-body')
+        expected_req += chunkedblock(
+            '\n' + 'zz\n' * ((0x1b - len('end-of-body')) / 3) + 'end-of-body')
         expected_req += '0\r\n\r\n'
         self.assertEqual(('1.2.3.4', 80), sock.sa)
         self.assertStringEqual(expected_req, sock.sent)
@@ -114,7 +115,8 @@ class ChunkedTransferTest(util.HttpTestBase, unittest.TestCase):
                      'transfer-encoding: chunked',
                      '\n\n',
                      chunkedblock('hi ', eol='\n'),
-                     ] + list(chunkedblock('there\n' * 5, eol='\n')) + [chunkedblock('', eol='\n')]
+                     ] + list(chunkedblock('there\n' * 5, eol='\n')) + [
+                         chunkedblock('', eol='\n')]
         con.request('GET', '/')
         self.assertStringEqual('hi there\nthere\nthere\nthere\nthere\n',
                                con.getresponse().read())

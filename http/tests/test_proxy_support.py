@@ -46,7 +46,8 @@ class ProxyHttpTest(util.HttpTestBase, unittest.TestCase):
         self.assertEqual(expected_data, con.getresponse().read())
 
     def testSimpleRequest(self):
-        con = http.HTTPConnection('1.2.3.4:80', proxy_hostport=('magicproxy', 4242))
+        con = http.HTTPConnection('1.2.3.4:80',
+                                  proxy_hostport=('magicproxy', 4242))
         con._connect()
         con.sock.data = ['HTTP/1.1 200 OK\r\n',
                          'Server: BogusServer 1.0\r\n',
@@ -73,7 +74,8 @@ class ProxyHttpTest(util.HttpTestBase, unittest.TestCase):
                          resp.headers.getheaders('server'))
 
     def testSSLRequest(self):
-        con = http.HTTPConnection('1.2.3.4:443', proxy_hostport=('magicproxy', 4242))
+        con = http.HTTPConnection('1.2.3.4:443',
+                                  proxy_hostport=('magicproxy', 4242))
         con._connect()
         con.sock.data = ['HTTP/1.1 100 Continue\r\n\r\n',
                          'HTTP/1.1 200 OK\r\n',
@@ -98,7 +100,8 @@ class ProxyHttpTest(util.HttpTestBase, unittest.TestCase):
                          resp.headers.getheaders('server'))
 
     def testSSLProxyFailure(self):
-        con = http.HTTPConnection('1.2.3.4:443', proxy_hostport=('magicproxy', 4242))
+        con = http.HTTPConnection('1.2.3.4:443',
+                                  proxy_hostport=('magicproxy', 4242))
         con._connect()
         con.sock.data = ['HTTP/1.1 407 Proxy Authentication Required\r\n\r\n',
                          ]

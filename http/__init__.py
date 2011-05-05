@@ -71,7 +71,8 @@ CONNECTION_CLOSE = 'close'
 EOL = '\r\n'
 _END_HEADERS = EOL * 2
 
-# Based on some searching around, 1 second seems like a reasonable default here.
+# Based on some searching around, 1 second seems like a reasonable
+# default here.
 TIMEOUT_ASSUME_CONTINUE = 1
 TIMEOUT_DEFAULT = None
 
@@ -138,15 +139,15 @@ class HTTPResponse(object):
 
     def read(self, length=None):
         # if length is None, unbounded read
-        while (not self.complete() # never select on a finished read
-               and (not length # unbounded, so we wait for complete()
+        while (not self.complete()  # never select on a finished read
+               and (not length  # unbounded, so we wait for complete()
                     or (self._read_location + length) > len(self._body))):
             self._select()
         if not length:
             length = len(self._body) - self._read_location
         elif len(self._body) < (self._read_location + length):
             length = len(self._body) - self._read_location
-        r = self._body[self._read_location:self._read_location+length]
+        r = self._body[self._read_location:self._read_location + length]
         self._read_location += len(r)
         return r
 
@@ -560,8 +561,10 @@ class HTTPConnection(object):
             r._select()
         return r
 
+
 class HTTPTimeoutException(httplib.HTTPException):
     """A timeout occurred while waiting on the server."""
+
 
 class BadRequestData(httplib.HTTPException):
     """Request body object has neither __len__ nor read."""

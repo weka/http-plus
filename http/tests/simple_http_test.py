@@ -186,7 +186,8 @@ class SimpleHttpTest(util.HttpTestBase, unittest.TestCase):
                         'Host: 1.2.3.4\r\n'
                         'content-length: %d\r\n'
                         'Expect: 100-Continue\r\n'
-                        'accept-encoding: identity\r\n\r\n' % len(body_to_send))
+                        'accept-encoding: identity\r\n\r\n' %
+                        len(body_to_send))
         if expect_body:
             expected_req += body_to_send
         return expected_req

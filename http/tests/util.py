@@ -108,6 +108,7 @@ def mockselect(r, w, x, timeout=0):
     readable = filter(lambda s: s.ready_for_read, r)
     return readable, w[:], []
 
+
 def mocksslwrap(sock, keyfile=None, certfile=None,
                 server_side=False, cert_reqs=http.socketutil.CERT_NONE,
                 ssl_version=http.socketutil.PROTOCOL_SSLv23, ca_certs=None,
@@ -147,9 +148,10 @@ class HttpTestBase(object):
 
     def assertStringEqual(self, l, r):
         try:
-            self.assertEqual(l, r, 'failed string equality check, see stdout for details')
+            self.assertEqual(l, r, ('failed string equality check, '
+                                    'see stdout for details'))
         except:
-            add_nl = lambda li: map(lambda x: x+'\n', li)
+            add_nl = lambda li: map(lambda x: x + '\n', li)
             print 'failed expectation:'
             print ''.join(difflib.unified_diff(
                 add_nl(l.splitlines()), add_nl(r.splitlines()),
