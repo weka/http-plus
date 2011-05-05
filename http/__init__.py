@@ -166,14 +166,17 @@ class HTTPResponse(object):
                 raise HTTPTimeoutException('timeout reading data')
             logger.info('cl: %r body: %r', self._content_len, self._body)
         data = self.sock.recv(INCOMING_BUFFER_SIZE)
+        logger.debug('response read %d data during _select', len(data))
         if not data:
             if not self.headers:
                 self._load_response(self._end_headers)
                 self._content_len = 0
             elif self._content_len == _LEN_CLOSE_IS_END:
                 self._content_len = len(self._body)
+            return False
         else:
             self._load_response(data)
+            return True
 
     def _chunked_parsedata(self, data):
         if self._chunked_preloaded_block:
@@ -349,23 +352,48 @@ class HTTPConnection(object):
         if self.sock:
             return
         if self._proxy_host is not None:
+            logger.info('Connecting to http proxy %s:%s',
+                        self._proxy_host, self._proxy_port)
             sock = socketutil.create_connection((self._proxy_host,
                                                  self._proxy_port))
             if self.ssl:
                 # TODO proxy header support
-                sock.send('CONNECT %s:%s %s\r\n\r\n' %
-                          (self.host, self.port, HTTP_VER_1_0))
-            self.sock = sock
+                data = self.buildheaders('CONNECT', '%s:%d' % (self.host,
+                                                               self.port),
+                                         {}, HTTP_VER_1_0)
+                sock.send(data)
+                sock.setblocking(0)
+                r = self.response_class(sock, self.timeout)
+                timeout_exc = HTTPTimeoutException(
+                    'Timed out waiting for CONNECT response from proxy')
+                while not r.complete():
+                    try:
+                        if not r._select():
+                            raise timeout_exc
+                    except HTTPTimeoutException:
+                        # This raise/except pattern looks goofy, but
+                        # _select can raise the timeout as well as the
+                        # loop body. I wish it wasn't this convoluted,
+                        # but I don't have a better solution
+                        # immediately handy.
+                        raise timeout_exc
+                if r.status != 200:
+                    raise HTTPProxyConnectFailedException(
+                        'Proxy connection failed: %d %s' % (r.status,
+                                                            r.read()))
+                logger.info('CONNECT (for SSL) to %s:%s via proxy succeeded.',
+                            self.host, self.port)
         else:
             sock = socketutil.create_connection((self.host, self.port))
-            if self.ssl:
-                sock = socketutil.wrap_socket(sock, **self.ssl_opts)
-            sock.setblocking(0)
-            self.sock = sock
+        if self.ssl:
+            logger.debug('wrapping socket for ssl with options %r',
+                         self.ssl_opts)
+            sock = socketutil.wrap_socket(sock, **self.ssl_opts)
+        sock.setblocking(0)
+        self.sock = sock
 
-    def buildheaders(self, method, url, headers):
-        self._connect()
-        outgoing = ['%s %s %s%s' % (method, url, self.http_version, EOL)]
+    def buildheaders(self, method, url, headers, http_ver):
+        outgoing = ['%s %s %s%s' % (method, url, http_ver, EOL)]
         headers['host'] = ('Host', self.host)
         headers[HDR_ACCEPT_ENCODING] = (HDR_ACCEPT_ENCODING, 'identity')
         for hdr, val in headers.itervalues():
@@ -433,7 +461,9 @@ class HTTPConnection(object):
             else:
                 raise BadRequestData('body has no __len__() nor read()')
 
-        outgoing_headers = self.buildheaders(method, url, hdrs)
+        self._connect()
+        outgoing_headers = self.buildheaders(
+            method, url, hdrs, self.http_version)
         response = None
         first = True
 
@@ -571,3 +601,7 @@ class HTTPTimeoutException(httplib.HTTPException):
 
 class BadRequestData(httplib.HTTPException):
     """Request body object has neither __len__ nor read."""
+
+
+class HTTPProxyConnectFailedException(httplib.HTTPException):
+    """Connecting to the HTTP proxy failed."""

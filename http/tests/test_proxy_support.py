@@ -27,11 +27,25 @@
 # (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 import unittest
+import socket
 
 import http
 
 # relative import to ease embedding the library
 import util
+
+
+def make_preloaded_socket(data):
+    """Make a socket pre-loaded with data so it can be read during connect.
+
+    Useful for https proxy tests because we have to read from the
+    socket during _connect rather than later on.
+    """
+    def s(*args, **kwargs):
+        sock = util.MockSocket(*args, **kwargs)
+        sock.data = data[:]
+        return sock
+    return s
 
 
 class ProxyHttpTest(util.HttpTestBase, unittest.TestCase):
@@ -76,9 +90,14 @@ class ProxyHttpTest(util.HttpTestBase, unittest.TestCase):
     def testSSLRequest(self):
         con = http.HTTPConnection('1.2.3.4:443',
                                   proxy_hostport=('magicproxy', 4242))
+        socket.socket = make_preloaded_socket(
+            ['HTTP/1.1 200 OK\r\n',
+             'Server: BogusServer 1.0\r\n',
+             'Content-Length: 10\r\n',
+             '\r\n'
+             '1234567890'])
         con._connect()
-        con.sock.data = ['HTTP/1.1 100 Continue\r\n\r\n',
-                         'HTTP/1.1 200 OK\r\n',
+        con.sock.data = ['HTTP/1.1 200 OK\r\n',
                          'Server: BogusServer 1.0\r\n',
                          'Content-Length: 10\r\n',
                          '\r\n'
@@ -86,7 +105,10 @@ class ProxyHttpTest(util.HttpTestBase, unittest.TestCase):
                          ]
         con.request('GET', '/')
 
-        expected_req = ('CONNECT 1.2.3.4:443 HTTP/1.0\r\n\r\n'
+        expected_req = ('CONNECT 1.2.3.4:443 HTTP/1.0\r\n'
+                        'Host: 1.2.3.4\r\n'
+                        'accept-encoding: identity\r\n'
+                        '\r\n'
                         'GET / HTTP/1.1\r\n'
                         'Host: 1.2.3.4\r\n'
                         'accept-encoding: identity\r\n\r\n')
@@ -102,17 +124,8 @@ class ProxyHttpTest(util.HttpTestBase, unittest.TestCase):
     def testSSLProxyFailure(self):
         con = http.HTTPConnection('1.2.3.4:443',
                                   proxy_hostport=('magicproxy', 4242))
-        con._connect()
-        con.sock.data = ['HTTP/1.1 407 Proxy Authentication Required\r\n\r\n',
-                         ]
-        con.request('GET', '/')
-
-        expected_req = ('CONNECT 1.2.3.4:443 HTTP/1.0\r\n\r\n'
-                        'GET / HTTP/1.1\r\n'
-                        'Host: 1.2.3.4\r\n'
-                        'accept-encoding: identity\r\n\r\n')
-
-        self.assertEqual(('127.0.0.42', 4242), con.sock.sa)
-        self.assertStringEqual(expected_req, con.sock.sent)
-        resp = con.getresponse()
-        self.assertEqual(resp.status, 407)
+        socket.socket = make_preloaded_socket(
+            ['HTTP/1.1 407 Proxy Authentication Required\r\n\r\n'])
+        self.assertRaises(http.HTTPProxyConnectFailedException, con._connect)
+        self.assertRaises(http.HTTPProxyConnectFailedException,
+                          con.request, 'GET', '/')
