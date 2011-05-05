@@ -119,7 +119,15 @@ else:
                 ssl_version=PROTOCOL_SSLv23, ca_certs=None,
                 do_handshake_on_connect=True,
                 suppress_ragged_eofs=True):
+        if cert_reqs != CERT_NONE and ca_certs:
+            raise CertificateValidationUnsupported(
+                'SSL certificate validation requires the ssl module'
+                '(included in Python 2.6 and later.)')
         sslob = socket.ssl(sock)
         # borrow httplib's workaround for no ssl.wrap_socket
         sock = FakeSocket(sock, sslob)
         return sock
+
+
+class CertificateValidationUnsupported(Exception):
+    """Exception raised when cert validation is requested but unavailable."""
