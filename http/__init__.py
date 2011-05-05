@@ -302,7 +302,8 @@ class HTTPConnection(object):
     http_version = HTTP_VER_1_1
     response_class = HTTPResponse
 
-    def __init__(self, host, port=None, use_ssl=None, timeout=TIMEOUT_DEFAULT,
+    def __init__(self, host, port=None, use_ssl=None, ssl_validator=None,
+                 timeout=TIMEOUT_DEFAULT,
                  continue_timeout=TIMEOUT_ASSUME_CONTINUE,
                  proxy_hostport=None, **ssl_opts):
         """Create a new HTTPConnection.
@@ -313,6 +314,7 @@ class HTTPConnection(object):
                 non-ssl, 443 for ssl.
           use_ssl: Optional. Wether to use ssl. Defaults to False if port is
                    not 443, true if port is 443.
+          ssl_validator: a function(socket) to validate the ssl cert
           timeout: Optional. Connection timeout, default is TIMEOUT_DEFAULT.
           continue_timeout: Optional. Timeout for waiting on an expected
                    "100 Continue" response. Default is TIMEOUT_ASSUME_CONTINUE.
@@ -336,6 +338,7 @@ class HTTPConnection(object):
             raise Exception('ssl requested but unavailable on this Python')
         self.ssl = use_ssl
         self.ssl_opts = ssl_opts
+        self._ssl_validator = ssl_validator
         self.host = host
         self.sock = None
         self._current_response = None
@@ -390,6 +393,8 @@ class HTTPConnection(object):
             logger.debug('wrapping socket for ssl with options %r',
                          self.ssl_opts)
             sock = socketutil.wrap_socket(sock, **self.ssl_opts)
+            if self._ssl_validator:
+                self._ssl_validator(sock)
         sock.setblocking(0)
         self.sock = sock
 
