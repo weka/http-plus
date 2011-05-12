@@ -109,12 +109,29 @@ def mockselect(r, w, x, timeout=0):
     return readable, w[:], []
 
 
+class MockSSLSocket(object):
+    def __init__(self, sock):
+        self._sock = sock
+        self._fail_recv = True
+
+    def __getattr__(self, key):
+        return getattr(self._sock, key)
+
+    def recv(self, amt=-1):
+        try:
+            if self._fail_recv:
+                raise socket.sslerror(socket.SSL_ERROR_WANT_READ)
+            return self._sock.recv(amt=amt)
+        finally:
+            self._fail_recv = not self._fail_recv
+
+
 def mocksslwrap(sock, keyfile=None, certfile=None,
                 server_side=False, cert_reqs=http.socketutil.CERT_NONE,
                 ssl_version=http.socketutil.PROTOCOL_SSLv23, ca_certs=None,
                 do_handshake_on_connect=True,
                 suppress_ragged_eofs=True):
-    return sock
+    return MockSSLSocket(sock)
 
 
 def mockgetaddrinfo(host, port, unused, streamtype):
