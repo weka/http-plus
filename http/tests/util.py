@@ -88,7 +88,7 @@ class MockSocket(object):
     def ready_for_read(self):
         return ((self.early_data and http._END_HEADERS in self.sent)
                 or (self.read_wait_sentinel in self.sent and self.data)
-                or self.closed)
+                or self.closed or self.remote_closed)
 
     def send(self, data):
         # this is a horrible mock, but nothing needs us to raise the
