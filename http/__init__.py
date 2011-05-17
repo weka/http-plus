@@ -174,10 +174,7 @@ class HTTPResponse(object):
             return True
         logger.debug('response read %d data during _select', len(data))
         if not data:
-            if not self.headers:
-                self._load_response(self._end_headers)
-                self._content_len = 0
-            elif self._content_len == _LEN_CLOSE_IS_END:
+            if self.headers and self._content_len == _LEN_CLOSE_IS_END:
                 self._content_len = len(self._body)
             return False
         else:
