@@ -39,7 +39,7 @@ class SimpleHttpTest(util.HttpTestBase, unittest.TestCase):
     def _run_simple_test(self, host, server_data, expected_req, expected_data):
         con = http.HTTPConnection(host)
         con._connect()
-        con.sock.data.extend(server_data)
+        con.sock.data = server_data
         con.request('GET', '/')
 
         self.assertStringEqual(expected_req, con.sock.sent)

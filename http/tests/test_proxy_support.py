@@ -43,7 +43,7 @@ def make_preloaded_socket(data):
     """
     def s(*args, **kwargs):
         sock = util.MockSocket(*args, **kwargs)
-        sock.data = data[:]
+        sock.early_data = data[:]
         return sock
     return s
 

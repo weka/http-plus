@@ -117,6 +117,11 @@ class MockSSLSocket(object):
     def __getattr__(self, key):
         return getattr(self._sock, key)
 
+    def __setattr__(self, key, value):
+        if key not in ('_sock', '_fail_recv'):
+            return setattr(self._sock, key, value)
+        return object.__setattr__(self, key, value)
+
     def recv(self, amt=-1):
         try:
             if self._fail_recv:
