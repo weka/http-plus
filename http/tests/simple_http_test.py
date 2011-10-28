@@ -193,6 +193,27 @@ dotencode
             self.assertEqual(expected, actual,
                              'Expected %r, got %r' % (expected, actual))
 
+    def testZeroLengthBody(self):
+        con = http.HTTPConnection('1.2.3.4')
+        con._connect()
+        # make sure it trickles in one byte at a time
+        # so that we touch all the cases in readline
+        con.sock.data = list(''.join(
+            ['HTTP/1.1 200 OK\r\n',
+             'Server: BogusServer 1.0\r\n',
+             'Content-length: 0\r\n',
+             '\r\n']))
+
+        expected_req = ('GET / HTTP/1.1\r\n'
+                        'Host: 1.2.3.4\r\n'
+                        'accept-encoding: identity\r\n\r\n')
+
+        con.request('GET', '/')
+        self.assertEqual(('1.2.3.4', 80), con.sock.sa)
+        self.assertEqual(expected_req, con.sock.sent)
+        r = con.getresponse()
+        self.assertEqual('', r.read())
+
     def testIPv6(self):
         self._run_simple_test('[::1]:8221',
                         ['HTTP/1.1 200 OK\r\n',
