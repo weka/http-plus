@@ -91,6 +91,7 @@ class HTTPResponse(object):
         self.will_close = False
         self.status_line = ''
         self.status = None
+        self.continued = False
         self.http_version = None
         self.reason = None
         self._reader = None
@@ -210,6 +211,7 @@ class HTTPResponse(object):
         http_ver, status = hdrs.split(' ', 1)
         if status.startswith('100'):
             self.raw_response = body
+            self.continued = True
             logger.debug('continue seen, setting body to %r', body)
             return
 
@@ -491,7 +493,7 @@ class HTTPConnection(object):
             out = outgoing_headers or body
             blocking_on_continue = False
             if expect_continue and not outgoing_headers and not (
-                response and response.headers):
+                response and (response.headers or response.continued)):
                 logger.info(
                     'waiting up to %s seconds for'
                     ' continue response from server',
