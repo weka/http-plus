@@ -1,2 +1,7 @@
-.coverage
+syntax:re
+\.coverage
 cover
+__version__\.py
+\.egg-info
+^build/
+^dist/

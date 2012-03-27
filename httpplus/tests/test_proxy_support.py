@@ -29,7 +29,7 @@
 import unittest
 import socket
 
-import http
+import httpplus
 
 # relative import to ease embedding the library
 import util
@@ -52,7 +52,7 @@ def make_preloaded_socket(data, close=False):
 class ProxyHttpTest(util.HttpTestBase, unittest.TestCase):
 
     def _run_simple_test(self, host, server_data, expected_req, expected_data):
-        con = http.HTTPConnection(host)
+        con = httpplus.HTTPConnection(host)
         con._connect()
         con.sock.data = server_data
         con.request('GET', '/')
@@ -61,7 +61,7 @@ class ProxyHttpTest(util.HttpTestBase, unittest.TestCase):
         self.assertEqual(expected_data, con.getresponse().read())
 
     def testSimpleRequest(self):
-        con = http.HTTPConnection('1.2.3.4:80',
+        con = httpplus.HTTPConnection('1.2.3.4:80',
                                   proxy_hostport=('magicproxy', 4242))
         con._connect()
         con.sock.data = ['HTTP/1.1 200 OK\r\n',
@@ -89,7 +89,7 @@ class ProxyHttpTest(util.HttpTestBase, unittest.TestCase):
                          resp.headers.getheaders('server'))
 
     def testSSLRequest(self):
-        con = http.HTTPConnection('1.2.3.4:443',
+        con = httpplus.HTTPConnection('1.2.3.4:443',
                                   proxy_hostport=('magicproxy', 4242))
         socket.socket = make_preloaded_socket(
             ['HTTP/1.1 200 OK\r\n',
@@ -126,7 +126,7 @@ class ProxyHttpTest(util.HttpTestBase, unittest.TestCase):
                          resp.headers.getheaders('server'))
 
     def testSSLRequestNoConnectBody(self):
-        con = http.HTTPConnection('1.2.3.4:443',
+        con = httpplus.HTTPConnection('1.2.3.4:443',
                                   proxy_hostport=('magicproxy', 4242))
         socket.socket = make_preloaded_socket(
             ['HTTP/1.1 200 OK\r\n',
@@ -161,10 +161,10 @@ class ProxyHttpTest(util.HttpTestBase, unittest.TestCase):
                          resp.headers.getheaders('server'))
 
     def testSSLProxyFailure(self):
-        con = http.HTTPConnection('1.2.3.4:443',
+        con = httpplus.HTTPConnection('1.2.3.4:443',
                                   proxy_hostport=('magicproxy', 4242))
         socket.socket = make_preloaded_socket(
             ['HTTP/1.1 407 Proxy Authentication Required\r\n\r\n'], close=True)
-        self.assertRaises(http.HTTPProxyConnectFailedException, con._connect)
-        self.assertRaises(http.HTTPProxyConnectFailedException,
+        self.assertRaises(httpplus.HTTPProxyConnectFailedException, con._connect)
+        self.assertRaises(httpplus.HTTPProxyConnectFailedException,
                           con.request, 'GET', '/')

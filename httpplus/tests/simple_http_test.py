@@ -29,7 +29,7 @@
 import socket
 import unittest
 
-import http
+import httpplus
 
 # relative import to ease embedding the library
 import util
@@ -38,7 +38,7 @@ import util
 class SimpleHttpTest(util.HttpTestBase, unittest.TestCase):
 
     def _run_simple_test(self, host, server_data, expected_req, expected_data):
-        con = http.HTTPConnection(host)
+        con = httpplus.HTTPConnection(host)
         con._connect()
         con.sock.data = server_data
         con.request('GET', '/')
@@ -47,9 +47,9 @@ class SimpleHttpTest(util.HttpTestBase, unittest.TestCase):
         self.assertEqual(expected_data, con.getresponse().read())
 
     def test_broken_data_obj(self):
-        con = http.HTTPConnection('1.2.3.4:80')
+        con = httpplus.HTTPConnection('1.2.3.4:80')
         con._connect()
-        self.assertRaises(http.BadRequestData,
+        self.assertRaises(httpplus.BadRequestData,
                           con.request, 'POST', '/', body=1)
 
     def test_no_keepalive_http_1_0(self):
@@ -74,7 +74,7 @@ store
 fncache
 dotencode
 """
-        con = http.HTTPConnection('localhost:9999')
+        con = httpplus.HTTPConnection('localhost:9999')
         con._connect()
         con.sock.data = [expected_response_headers, expected_response_body]
         con.request('GET', '/remote/.hg/requires',
@@ -95,7 +95,7 @@ dotencode
         self.assert_(resp.sock.closed)
 
     def test_multiline_header(self):
-        con = http.HTTPConnection('1.2.3.4:80')
+        con = httpplus.HTTPConnection('1.2.3.4:80')
         con._connect()
         con.sock.data = ['HTTP/1.1 200 OK\r\n',
                          'Server: BogusServer 1.0\r\n',
@@ -122,7 +122,7 @@ dotencode
         self.assertEqual(con.sock.closed, False)
 
     def testSimpleRequest(self):
-        con = http.HTTPConnection('1.2.3.4:80')
+        con = httpplus.HTTPConnection('1.2.3.4:80')
         con._connect()
         con.sock.data = ['HTTP/1.1 200 OK\r\n',
                          'Server: BogusServer 1.0\r\n',
@@ -149,7 +149,7 @@ dotencode
                          resp.headers.getheaders('server'))
 
     def testHeaderlessResponse(self):
-        con = http.HTTPConnection('1.2.3.4', use_ssl=False)
+        con = httpplus.HTTPConnection('1.2.3.4', use_ssl=False)
         con._connect()
         con.sock.data = ['HTTP/1.1 200 OK\r\n',
                          '\r\n'
@@ -170,7 +170,7 @@ dotencode
         self.assertEqual(resp.status, 200)
 
     def testReadline(self):
-        con = http.HTTPConnection('1.2.3.4')
+        con = httpplus.HTTPConnection('1.2.3.4')
         con._connect()
         con.sock.data = ['HTTP/1.1 200 OK\r\n',
                          'Server: BogusServer 1.0\r\n',
@@ -193,7 +193,7 @@ dotencode
                              'Expected %r, got %r' % (expected, actual))
 
     def testReadlineTrickle(self):
-        con = http.HTTPConnection('1.2.3.4')
+        con = httpplus.HTTPConnection('1.2.3.4')
         con._connect()
         # make sure it trickles in one byte at a time
         # so that we touch all the cases in readline
@@ -219,7 +219,7 @@ dotencode
                              'Expected %r, got %r' % (expected, actual))
 
     def testVariousReads(self):
-        con = http.HTTPConnection('1.2.3.4')
+        con = httpplus.HTTPConnection('1.2.3.4')
         con._connect()
         # make sure it trickles in one byte at a time
         # so that we touch all the cases in readline
@@ -251,7 +251,7 @@ dotencode
                 self.assertEqual(expect, r.read(read_amt))
 
     def testZeroLengthBody(self):
-        con = http.HTTPConnection('1.2.3.4')
+        con = httpplus.HTTPConnection('1.2.3.4')
         con._connect()
         # make sure it trickles in one byte at a time
         # so that we touch all the cases in readline
@@ -304,7 +304,7 @@ dotencode
                         '1234567890')
 
     def testEarlyContinueResponse(self):
-        con = http.HTTPConnection('1.2.3.4:80')
+        con = httpplus.HTTPConnection('1.2.3.4:80')
         con._connect()
         sock = con.sock
         sock.data = ['HTTP/1.1 403 Forbidden\r\n',
@@ -319,7 +319,7 @@ dotencode
         self.assertEqual(sock.closed, True)
 
     def testEarlyContinueResponseNoContentLength(self):
-        con = http.HTTPConnection('1.2.3.4:80')
+        con = httpplus.HTTPConnection('1.2.3.4:80')
         con._connect()
         sock = con.sock
         sock.data = ['HTTP/1.1 403 Forbidden\r\n',
@@ -334,7 +334,7 @@ dotencode
         self.assertEqual(sock.closed, True)
 
     def testDeniedAfterContinueTimeoutExpires(self):
-        con = http.HTTPConnection('1.2.3.4:80')
+        con = httpplus.HTTPConnection('1.2.3.4:80')
         con._connect()
         sock = con.sock
         sock.data = ['HTTP/1.1 403 Forbidden\r\n',
@@ -362,7 +362,7 @@ dotencode
         self.assertEqual(sock.closed, True)
 
     def testPostData(self):
-        con = http.HTTPConnection('1.2.3.4:80')
+        con = httpplus.HTTPConnection('1.2.3.4:80')
         con._connect()
         sock = con.sock
         sock.read_wait_sentinel = 'POST data'
@@ -379,7 +379,7 @@ dotencode
         self.assertEqual(sock.closed, False)
 
     def testServerWithoutContinue(self):
-        con = http.HTTPConnection('1.2.3.4:80')
+        con = httpplus.HTTPConnection('1.2.3.4:80')
         con._connect()
         sock = con.sock
         sock.read_wait_sentinel = 'POST data'
@@ -395,7 +395,7 @@ dotencode
         self.assertEqual(sock.closed, False)
 
     def testServerWithSlowContinue(self):
-        con = http.HTTPConnection('1.2.3.4:80')
+        con = httpplus.HTTPConnection('1.2.3.4:80')
         con._connect()
         sock = con.sock
         sock.read_wait_sentinel = 'POST data'
@@ -414,7 +414,7 @@ dotencode
         self.assertEqual(sock.closed, False)
 
     def testSlowConnection(self):
-        con = http.HTTPConnection('1.2.3.4:80')
+        con = httpplus.HTTPConnection('1.2.3.4:80')
         con._connect()
         # simulate one byte arriving at a time, to check for various
         # corner cases
@@ -434,11 +434,11 @@ dotencode
         self.assertEqual('1234567890', con.getresponse().read())
 
     def testTimeout(self):
-        con = http.HTTPConnection('1.2.3.4:80')
+        con = httpplus.HTTPConnection('1.2.3.4:80')
         con._connect()
         con.sock.data = []
         con.request('GET', '/')
-        self.assertRaises(http.HTTPTimeoutException,
+        self.assertRaises(httpplus.HTTPTimeoutException,
                           con.getresponse)
 
         expected_req = ('GET / HTTP/1.1\r\n'
@@ -463,7 +463,7 @@ dotencode
             return s
 
         socket.socket = closingsocket
-        con = http.HTTPConnection('1.2.3.4:80')
+        con = httpplus.HTTPConnection('1.2.3.4:80')
         con._connect()
         con.request('GET', '/')
         r1 = con.getresponse()
@@ -474,7 +474,7 @@ dotencode
         self.assertEqual(2, len(sockets))
 
     def test_server_closes_before_end_of_body(self):
-        con = http.HTTPConnection('1.2.3.4:80')
+        con = httpplus.HTTPConnection('1.2.3.4:80')
         con._connect()
         s = con.sock
         s.data = ['HTTP/1.1 200 OK\r\n',
@@ -486,8 +486,8 @@ dotencode
         s.close_on_empty = True
         con.request('GET', '/')
         r1 = con.getresponse()
-        self.assertRaises(http.HTTPRemoteClosedError, r1.read)
+        self.assertRaises(httpplus.HTTPRemoteClosedError, r1.read)
 
     def test_no_response_raises_response_not_ready(self):
-        con = http.HTTPConnection('foo')
-        self.assertRaises(http.httplib.ResponseNotReady, con.getresponse)
+        con = httpplus.HTTPConnection('foo')
+        self.assertRaises(httpplus.httplib.ResponseNotReady, con.getresponse)

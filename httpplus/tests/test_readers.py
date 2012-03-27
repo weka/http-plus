@@ -29,7 +29,7 @@
 
 import unittest
 
-from http import _readers
+from httpplus import _readers
 
 def chunkedblock(x, eol='\r\n'):
     r"""Make a chunked transfer-encoding block.

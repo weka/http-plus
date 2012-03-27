@@ -34,7 +34,7 @@ against that potential insanit.y
 """
 import unittest
 
-import http
+import httpplus
 
 # relative import to ease embedding the library
 import util
@@ -43,7 +43,7 @@ import util
 class SimpleHttpTest(util.HttpTestBase, unittest.TestCase):
 
     def bogusEOL(self, eol):
-        con = http.HTTPConnection('1.2.3.4:80')
+        con = httpplus.HTTPConnection('1.2.3.4:80')
         con._connect()
         con.sock.data = ['HTTP/1.1 200 OK%s' % eol,
                          'Server: BogusServer 1.0%s' % eol,
