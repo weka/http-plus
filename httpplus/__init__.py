@@ -173,11 +173,12 @@ class HTTPResponse(object):
             logger.debug('SSL_WANT_READ in _select, should retry later')
             return True
         logger.debug('response read %d data during _select', len(data))
-        # If the socket was readable and no data was read, that
-        # means the socket was closed. Inform the reader so it can
+        # If the socket was readable and no data was read, that means
+        # the socket was closed. Inform the reader (if any) so it can
         # raise an exception if this is an invalid situation.
         if not data:
-            self._reader._close()
+            if self._reader:
+                self._reader._close()
             return False
         else:
             self._load_response(data)
@@ -636,7 +637,8 @@ class HTTPConnection(object):
             raise httplib.ResponseNotReady()
         r = self._current_response
         while r.headers is None:
-            r._select()
+            if not r._select() and not r.complete():
+                raise _readers.HTTPRemoteClosedError()
         if r.will_close:
             self.sock = None
             self._current_response = None

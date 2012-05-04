@@ -433,6 +433,20 @@ dotencode
         self.assertEqual(expected_req, con.sock.sent)
         self.assertEqual('1234567890', con.getresponse().read())
 
+    def testCloseAfterNotAllOfHeaders(self):
+        con = httpplus.HTTPConnection('1.2.3.4:80')
+        con._connect()
+        con.sock.data = ['HTTP/1.1 200 OK\r\n',
+                         'Server: NO CARRIER']
+        con.sock.close_on_empty = True
+        con.request('GET', '/')
+        self.assertRaises(httpplus.HTTPRemoteClosedError,
+                          con.getresponse)
+
+        expected_req = ('GET / HTTP/1.1\r\n'
+                        'Host: 1.2.3.4\r\n'
+                        'accept-encoding: identity\r\n\r\n')
+
     def testTimeout(self):
         con = httpplus.HTTPConnection('1.2.3.4:80')
         con._connect()
