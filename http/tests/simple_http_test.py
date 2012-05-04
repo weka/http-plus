@@ -155,6 +155,7 @@ dotencode
                          '\r\n'
                          '1234567890'
                          ]
+        con.sock.close_on_empty = True
         con.request('GET', '/')
 
         expected_req = ('GET / HTTP/1.1\r\n'
@@ -171,14 +172,12 @@ dotencode
     def testReadline(self):
         con = http.HTTPConnection('1.2.3.4')
         con._connect()
-        # make sure it trickles in one byte at a time
-        # so that we touch all the cases in readline
-        con.sock.data = list(''.join(
-            ['HTTP/1.1 200 OK\r\n',
-             'Server: BogusServer 1.0\r\n',
-             'Connection: Close\r\n',
-             '\r\n'
-             '1\n2\nabcdefg\n4\n5']))
+        con.sock.data = ['HTTP/1.1 200 OK\r\n',
+                         'Server: BogusServer 1.0\r\n',
+                         'Connection: Close\r\n',
+                         '\r\n'
+                         '1\n2\nabcdefg\n4\n5']
+        con.sock.close_on_empty = True
 
         expected_req = ('GET / HTTP/1.1\r\n'
                         'Host: 1.2.3.4\r\n'
@@ -192,6 +191,64 @@ dotencode
             actual = r.readline()
             self.assertEqual(expected, actual,
                              'Expected %r, got %r' % (expected, actual))
+
+    def testReadlineTrickle(self):
+        con = http.HTTPConnection('1.2.3.4')
+        con._connect()
+        # make sure it trickles in one byte at a time
+        # so that we touch all the cases in readline
+        con.sock.data = list(''.join(
+            ['HTTP/1.1 200 OK\r\n',
+             'Server: BogusServer 1.0\r\n',
+             'Connection: Close\r\n',
+             '\r\n'
+             '1\n2\nabcdefg\n4\n5']))
+        con.sock.close_on_empty = True
+
+        expected_req = ('GET / HTTP/1.1\r\n'
+                        'Host: 1.2.3.4\r\n'
+                        'accept-encoding: identity\r\n\r\n')
+
+        con.request('GET', '/')
+        self.assertEqual(('1.2.3.4', 80), con.sock.sa)
+        self.assertEqual(expected_req, con.sock.sent)
+        r = con.getresponse()
+        for expected in ['1\n', '2\n', 'abcdefg\n', '4\n', '5']:
+            actual = r.readline()
+            self.assertEqual(expected, actual,
+                             'Expected %r, got %r' % (expected, actual))
+
+    def testVariousReads(self):
+        con = http.HTTPConnection('1.2.3.4')
+        con._connect()
+        # make sure it trickles in one byte at a time
+        # so that we touch all the cases in readline
+        con.sock.data = list(''.join(
+            ['HTTP/1.1 200 OK\r\n',
+             'Server: BogusServer 1.0\r\n',
+             'Connection: Close\r\n',
+             '\r\n'
+             '1\n2',
+             '\na', 'bc',
+             'defg\n4\n5']))
+        con.sock.close_on_empty = True
+
+        expected_req = ('GET / HTTP/1.1\r\n'
+                        'Host: 1.2.3.4\r\n'
+                        'accept-encoding: identity\r\n\r\n')
+
+        con.request('GET', '/')
+        self.assertEqual(('1.2.3.4', 80), con.sock.sa)
+        self.assertEqual(expected_req, con.sock.sent)
+        r = con.getresponse()
+        for read_amt, expect in [(1, '1'), (1, '\n'),
+                                 (4, '2\nab'),
+                                 ('line', 'cdefg\n'),
+                                 (None, '4\n5')]:
+            if read_amt == 'line':
+                self.assertEqual(expect, r.readline())
+            else:
+                self.assertEqual(expect, r.read(read_amt))
 
     def testZeroLengthBody(self):
         con = http.HTTPConnection('1.2.3.4')
@@ -255,6 +312,21 @@ dotencode
                          'Content-Length: 18',
                          '\r\n\r\n'
                          "You can't do that."]
+        expected_req = self.doPost(con, expect_body=False)
+        self.assertEqual(('1.2.3.4', 80), sock.sa)
+        self.assertStringEqual(expected_req, sock.sent)
+        self.assertEqual("You can't do that.", con.getresponse().read())
+        self.assertEqual(sock.closed, True)
+
+    def testEarlyContinueResponseNoContentLength(self):
+        con = http.HTTPConnection('1.2.3.4:80')
+        con._connect()
+        sock = con.sock
+        sock.data = ['HTTP/1.1 403 Forbidden\r\n',
+                         'Server: BogusServer 1.0\r\n',
+                         '\r\n'
+                         "You can't do that."]
+        sock.close_on_empty = True
         expected_req = self.doPost(con, expect_body=False)
         self.assertEqual(('1.2.3.4', 80), sock.sa)
         self.assertStringEqual(expected_req, sock.sent)

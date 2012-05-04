@@ -85,11 +85,28 @@ class ChunkedTransferTest(util.HttpTestBase, unittest.TestCase):
                      'transfer-encoding: chunked',
                      '\r\n\r\n',
                      chunkedblock('hi '),
-                     chunkedblock('there'),
+                     ] + list(chunkedblock('there')) + [
                      chunkedblock(''),
                      ]
         con.request('GET', '/')
         self.assertStringEqual('hi there', con.getresponse().read())
+
+    def testChunkedDownloadOddReadBoundaries(self):
+        con = http.HTTPConnection('1.2.3.4:80')
+        con._connect()
+        sock = con.sock
+        sock.data = ['HTTP/1.1 200 OK\r\n',
+                     'Server: BogusServer 1.0\r\n',
+                     'transfer-encoding: chunked',
+                     '\r\n\r\n',
+                     chunkedblock('hi '),
+                     ] + list(chunkedblock('there')) + [
+                     chunkedblock(''),
+                     ]
+        con.request('GET', '/')
+        resp = con.getresponse()
+        for amt, expect in [(1, 'h'), (5, 'i the'), (100, 're')]:
+            self.assertEqual(expect, resp.read(amt))
 
     def testChunkedDownloadBadEOL(self):
         con = http.HTTPConnection('1.2.3.4:80')
