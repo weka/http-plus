@@ -157,7 +157,6 @@ class ChunkedReader(AbstractReader):
     def __init__(self, eol):
         AbstractReader.__init__(self)
         self._eol = eol
-        self._leftover_skip_amt = 0
         self._leftover_data = ''
 
     def _load(self, data):
@@ -168,23 +167,19 @@ class ChunkedReader(AbstractReader):
             logger.debug('chunked reader trying to finish block from leftover data')
             # TODO: avoid this string concatenation if possible
             data = self._leftover_data + data
-            position = self._leftover_skip_amt
             self._leftover_data = ''
-            self._leftover_skip_amt = 0
         datalen = len(data)
         while position < datalen:
             split = data.find(self._eol, position)
             if split == -1:
-                self._leftover_data = data
-                self._leftover_skip_amt = position
+                self._leftover_data = data[position:]
                 return
             amt = int(data[position:split], base=16)
             block_start = split + len(self._eol)
             # If the whole data chunk plus the eol trailer hasn't
             # loaded, we'll wait for the next load.
             if block_start + amt + len(self._eol) > len(data):
-                self._leftover_data = data
-                self._leftover_skip_amt = position
+                self._leftover_data = data[position:]
                 return
             if amt == 0:
                 self._finished = True
