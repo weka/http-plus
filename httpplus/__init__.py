@@ -125,24 +125,16 @@ class HTTPResponse(object):
         This may block until either a line ending is found or the
         response is complete.
         """
-        # TODO: move this into the reader interface where it can be
-        # smarter (and probably avoid copies)
-        bytes = []
-        while not bytes:
-            try:
-                bytes = [self._reader.read(1)]
-            except _readers.ReadNotReady:
-                self._select()
-        while bytes[-1] != '\n' and not self.complete():
+        blocks = []
+        while True:
+            self._reader.readto('\n', blocks)
+
+            if blocks and blocks[-1][-1] == '\n' or self.complete():
+                break
+
             self._select()
-            bytes.append(self._reader.read(1))
-        if bytes[-1] != '\n':
-            next = self._reader.read(1)
-            while next and next != '\n':
-                bytes.append(next)
-                next = self._reader.read(1)
-            bytes.append(next)
-        return ''.join(bytes)
+
+        return ''.join(blocks)
 
     def read(self, length=None):
         # if length is None, unbounded read
@@ -170,7 +162,7 @@ class HTTPResponse(object):
         except socket.sslerror, e:
             if e.args[0] != socket.SSL_ERROR_WANT_READ:
                 raise
-            logger.debug('SSL_WANT_READ in _select, should retry later')
+            logger.debug('SSL_ERROR_WANT_READ in _select, should retry later')
             return True
         logger.debug('response read %d data during _select', len(data))
         # If the socket was readable and no data was read, that means
@@ -374,7 +366,7 @@ class HTTPConnection(object):
         if self.ssl:
             # This is the default, but in the case of proxied SSL
             # requests the proxy logic above will have cleared
-            # blocking mode, so reenable it just to be safe.
+            # blocking mode, so re-enable it just to be safe.
             sock.setblocking(1)
             logger.debug('wrapping socket for ssl with options %r',
                          self.ssl_opts)
@@ -532,7 +524,7 @@ class HTTPConnection(object):
                         if e.args[0] != socket.SSL_ERROR_WANT_READ:
                             raise
                         logger.debug(
-                            'SSL_WANT_READ while sending data, retrying...')
+                            'SSL_ERROR_WANT_READ while sending data, retrying...')
                         continue
                     if not data:
                         logger.info('socket appears closed in read')
