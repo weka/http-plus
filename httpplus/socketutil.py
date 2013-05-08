@@ -57,7 +57,7 @@ except AttributeError:
         sock = None
         for res in socket.getaddrinfo(host, port, 0,
                                       socket.SOCK_STREAM):
-            af, socktype, proto, _canonname, sa = res
+            af, socktype, proto, unused_canonname, sa = res
             try:
                 sock = socket.socket(af, socktype, proto)
                 logger.info("connect: (%s, %s)", host, port)
@@ -107,6 +107,10 @@ else:
     CERT_OPTIONAL = 1
     CERT_REQUIRED = 2
 
+    # Disable unused-argument because we're making a dumb wrapper
+    # that's like an upstream method.
+    #
+    # pylint: disable=W0613
     def wrap_socket(sock, keyfile=None, certfile=None,
                 server_side=False, cert_reqs=CERT_NONE,
                 ssl_version=_PROTOCOL_SSLv23, ca_certs=None,
@@ -120,6 +124,7 @@ else:
         # borrow httplib's workaround for no ssl.wrap_socket
         sock = FakeSocket(sock, sslob)
         return sock
+    # pylint: enable=W0613
 
 
 class CertificateValidationUnsupported(Exception):

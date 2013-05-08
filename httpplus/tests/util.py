@@ -105,7 +105,7 @@ class MockSocket(object):
         return len(data)
 
 
-def mockselect(r, w, x, timeout=0):
+def mockselect(r, w, x, timeout=0): # pylint: disable=W0613
     """Simple mock for select()
     """
     readable = filter(lambda s: s.ready_for_read, r)
@@ -134,6 +134,9 @@ class MockSSLSocket(object):
             self._fail_recv = not self._fail_recv
 
 
+# Mock sslwrap doesn't need to use these args, silence lint
+#
+# pylint: disable=W0613
 def mocksslwrap(sock, keyfile=None, certfile=None,
                 server_side=False, cert_reqs=httpplus.socketutil.CERT_NONE,
                 ssl_version=None, ca_certs=None,
@@ -142,6 +145,7 @@ def mocksslwrap(sock, keyfile=None, certfile=None,
     assert sock.blocking, ('wrapping a socket with ssl requires that '
                            'it be in blocking mode.')
     return MockSSLSocket(sock)
+# pylint: enable=W0613
 
 
 def mockgetaddrinfo(host, port, unused, streamtype):

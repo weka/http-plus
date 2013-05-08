@@ -150,7 +150,8 @@ class HTTPResponse(object):
         return r
 
     def _select(self):
-        r, _, _ = select.select([self.sock], [], [], self._timeout)
+        r, unused_write, unused_err = select.select(
+            [self.sock], [], [], self._timeout)
         if not r:
             # socket was not readable. If the response is not
             # complete, raise a timeout.
@@ -201,7 +202,7 @@ class HTTPResponse(object):
 
         # handle 100-continue response
         hdrs, body = self.raw_response.split(self._end_headers, 1)
-        http_ver, status = hdrs.split(' ', 1)
+        unused_http_ver, status = hdrs.split(' ', 1)
         if status.startswith('100'):
             self.raw_response = body
             self.continued = True
@@ -604,10 +605,6 @@ class HTTPConnection(object):
                     amt = self.sock.send(out)
                 logger.debug('sent %d', amt)
                 first = False
-                # stash data we think we sent in case the socket breaks
-                # when we read from it
-                if was_first:
-                    sent_data = out[:amt]
                 if out is body:
                     body = out[amt:]
                 else:
@@ -617,7 +614,6 @@ class HTTPConnection(object):
         # the whole request
         if response is None:
             response = self.response_class(self.sock, self.timeout, method)
-        complete = response.complete()
         data_left = bool(outgoing_headers or body)
         if data_left:
             logger.info('stopped sending request early, '
