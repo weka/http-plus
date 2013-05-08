@@ -446,6 +446,8 @@ dotencode
         expected_req = ('GET / HTTP/1.1\r\n'
                         'Host: 1.2.3.4\r\n'
                         'accept-encoding: identity\r\n\r\n')
+        self.assertEqual(('1.2.3.4', 80), con.sock.sa)
+        self.assertEqual(expected_req, con.sock.sent)
 
     def testTimeout(self):
         con = httpplus.HTTPConnection('1.2.3.4:80')
