@@ -165,6 +165,7 @@ class ProxyHttpTest(util.HttpTestBase, unittest.TestCase):
                                   proxy_hostport=('magicproxy', 4242))
         socket.socket = make_preloaded_socket(
             ['HTTP/1.1 407 Proxy Authentication Required\r\n\r\n'], close=True)
-        self.assertRaises(httpplus.HTTPProxyConnectFailedException, con._connect)
+        self.assertRaises(httpplus.HTTPProxyConnectFailedException,
+                          con._connect)
         self.assertRaises(httpplus.HTTPProxyConnectFailedException,
                           con.request, 'GET', '/')

@@ -523,8 +523,8 @@ class HTTPConnection(object):
                     except socket.sslerror, e:
                         if e.args[0] != socket.SSL_ERROR_WANT_READ:
                             raise
-                        logger.debug(
-                            'SSL_ERROR_WANT_READ while sending data, retrying...')
+                        logger.debug('SSL_ERROR_WANT_READ while sending '
+                                     'data, retrying...')
                         continue
                     if not data:
                         logger.info('socket appears closed in read')
@@ -563,7 +563,8 @@ class HTTPConnection(object):
                                 'response was missing or incomplete!')
                     logger.debug('read %d bytes in request()', len(data))
                     if response is None:
-                        response = self.response_class(r[0], self.timeout, method)
+                        response = self.response_class(
+                            r[0], self.timeout, method)
                     response._load_response(data)
                     # Jump to the next select() call so we load more
                     # data if the server is still sending us content.

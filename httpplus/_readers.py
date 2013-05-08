@@ -199,7 +199,8 @@ class ChunkedReader(AbstractReader):
         logger.debug('chunked read an additional %d data', len(data))
         position = 0
         if self._leftover_data:
-            logger.debug('chunked reader trying to finish block from leftover data')
+            logger.debug(
+                'chunked reader trying to finish block from leftover data')
             # TODO: avoid this string concatenation if possible
             data = self._leftover_data + data
             position = self._leftover_skip_amt
