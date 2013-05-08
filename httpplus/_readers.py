@@ -33,7 +33,6 @@ have any clients outside of httpplus.
 """
 
 import httplib
-import itertools
 import logging
 
 logger = logging.getLogger(__name__)
