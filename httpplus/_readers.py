@@ -58,15 +58,15 @@ class AbstractReader(object):
         self._done_chunks = []
         self.available_data = 0
 
-    def addchunk(self, data):
+    def _addchunk(self, data):
         self._done_chunks.append(data)
         self.available_data += len(data)
 
-    def pushchunk(self, data):
+    def _pushchunk(self, data):
         self._done_chunks.insert(0, data)
         self.available_data += len(data)
 
-    def popchunk(self):
+    def _popchunk(self):
         b = self._done_chunks.pop(0)
         self.available_data -= len(b)
 
@@ -81,10 +81,10 @@ class AbstractReader(object):
         blocks = []
         need = amt
         while self._done_chunks:
-            b = self.popchunk()
+            b = self._popchunk()
             if len(b) > need:
                 nb = b[:need]
-                self.pushchunk(b[need:])
+                self._pushchunk(b[need:])
                 b = nb
             blocks.append(b)
             need -= len(b)
@@ -106,11 +106,11 @@ class AbstractReader(object):
             blocks = []
 
         while self._done_chunks:
-            b = self.popchunk()
+            b = self._popchunk()
             i = b.find(delimstr) + len(delimstr)
             if i:
                 if i < len(b):
-                    self.pushchunk(b[i:])
+                    self._pushchunk(b[i:])
                 blocks.append(b[:i])
                 break
             else:
@@ -154,7 +154,7 @@ class AbstractSimpleReader(AbstractReader):
             assert not self._finished, (
                 'tried to add data (%r) to a closed reader!' % data)
         logger.debug('%s read an additional %d data', self.name, len(data))
-        self.addchunk(data)
+        self._addchunk(data)
 
 
 class CloseIsEndReader(AbstractSimpleReader):
@@ -224,5 +224,5 @@ class ChunkedReader(AbstractReader):
                 self._finished = True
                 logger.debug('closing chunked reader due to chunk of length 0')
                 return
-            self.addchunk(data[block_start:block_start + amt])
+            self._addchunk(data[block_start:block_start + amt])
             position = block_start + amt + len(self._eol)
