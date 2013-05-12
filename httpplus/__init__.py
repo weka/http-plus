@@ -336,9 +336,9 @@ class HTTPConnection(object):
                                                  self._proxy_port))
             if self.ssl:
                 # TODO proxy header support
-                data = self.buildheaders('CONNECT', '%s:%d' % (self.host,
-                                                               self.port),
-                                         {}, HTTP_VER_1_0)
+                data = self._buildheaders('CONNECT', '%s:%d' % (self.host,
+                                                                self.port),
+                                          {}, HTTP_VER_1_0)
                 sock.send(data)
                 sock.setblocking(0)
                 r = self.response_class(sock, self.timeout, 'CONNECT')
@@ -377,7 +377,7 @@ class HTTPConnection(object):
         sock.setblocking(0)
         self.sock = sock
 
-    def buildheaders(self, method, path, headers, http_ver):
+    def _buildheaders(self, method, path, headers, http_ver):
         if self.ssl and self.port == 443 or self.port == 80:
             # default port for protocol, so leave it out
             hdrhost = self.host
@@ -475,7 +475,7 @@ class HTTPConnection(object):
                 raise BadRequestData('body has no __len__() nor read()')
 
         self._connect()
-        outgoing_headers = self.buildheaders(
+        outgoing_headers = self._buildheaders(
             method, path, hdrs, self.http_version)
         response = None
         first = True
