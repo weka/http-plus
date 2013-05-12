@@ -438,6 +438,11 @@ class HTTPConnection(object):
             return True
         return False
 
+    def _reconnect(self, where):
+        logger.info('reconnecting during %s', where)
+        self.close()
+        self._connect()
+
     def request(self, method, path, body=None, headers={},
                 expect_continue=False):
         """Send a request to the server.
@@ -479,11 +484,6 @@ class HTTPConnection(object):
             method, path, hdrs, self.http_version)
         response = None
         first = True
-
-        def reconnect(where):
-            logger.info('reconnecting during %s', where)
-            self.close()
-            self._connect()
 
         while ((outgoing_headers or body)
                and not (response and response.complete())):
@@ -551,7 +551,7 @@ class HTTPConnection(object):
                             logger.info(
                                 'Connection appeared closed in read on first'
                                 ' request loop iteration, will retry.')
-                            reconnect('read')
+                            self._reconnect('read')
                             continue
                         else:
                             # We didn't just send the first data hunk,
@@ -601,7 +601,7 @@ class HTTPConnection(object):
                     elif (e[0] not in (errno.ECONNRESET, errno.EPIPE)
                           and not first):
                         raise
-                    reconnect('write')
+                    self._reconnect('write')
                     amt = self.sock.send(out)
                 logger.debug('sent %d', amt)
                 first = False
