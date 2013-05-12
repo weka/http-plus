@@ -73,9 +73,11 @@ class AbstractReader(object):
         return b
 
     def done(self):
+        """Returns true if the response body is entirely read."""
         return self._finished
 
     def read(self, amt):
+        """Read amt bytes from the response body."""
         if self.available_data < amt and not self._finished:
             raise ReadNotReady()
         blocks = []
@@ -153,7 +155,8 @@ class AbstractSimpleReader(AbstractReader):
         if data:
             assert not self._finished, (
                 'tried to add data (%r) to a closed reader!' % data)
-        logger.debug('%s read an additional %d data', self.name, len(data))
+        logger.debug('%s read an additional %d data',
+                     self.name, len(data)) # pylint: disable=E1101
         self._addchunk(data)
 
 
@@ -171,7 +174,7 @@ class ContentLengthReader(AbstractSimpleReader):
     name = 'content-length'
 
     def __init__(self, amount):
-        AbstractReader.__init__(self)
+        AbstractSimpleReader.__init__(self)
         self._amount = amount
         if amount == 0:
             self._finished = True

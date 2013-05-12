@@ -37,6 +37,9 @@ httplib, but has several additional features:
   * implements ssl inline instead of in a different class
 """
 
+# Many functions in this file have too many arguments.
+# pylint: disable=R0913
+
 import cStringIO
 import errno
 import httplib
@@ -117,6 +120,8 @@ class HTTPResponse(object):
 
     def _close(self):
         if self._reader is not None:
+            # We're a friend of the reader class here.
+            # pylint: disable=W0212
             self._reader._close()
 
     def readline(self):
@@ -137,6 +142,7 @@ class HTTPResponse(object):
         return ''.join(blocks)
 
     def read(self, length=None):
+        """Read data from the response body."""
         # if length is None, unbounded read
         while (not self.complete()  # never select on a finished read
                and (not length  # unbounded, so we wait for complete()
@@ -171,13 +177,16 @@ class HTTPResponse(object):
         # raise an exception if this is an invalid situation.
         if not data:
             if self._reader:
+                # We're a friend of the reader class here.
+                # pylint: disable=W0212
                 self._reader._close()
             return False
         else:
             self._load_response(data)
             return True
 
-    def _load_response(self, data):
+    # This method gets replaced by _load later, which confuses pylint.
+    def _load_response(self, data): # pylint: disable=E0202
         # Being here implies we're not at the end of the headers yet,
         # since at the end of this method if headers were completely
         # loaded we replace this method with the load() method of the
@@ -261,9 +270,13 @@ class HTTPResponse(object):
                 self.will_close = True
 
         if body:
+            # We're a friend of the reader class here.
+            # pylint: disable=W0212
             self._reader._load(body)
         logger.debug('headers complete')
         self.headers = headers
+        # We're a friend of the reader class here.
+        # pylint: disable=W0212
         self._load_response = self._reader._load
 
 
@@ -346,6 +359,9 @@ class HTTPConnection(object):
                     'Timed out waiting for CONNECT response from proxy')
                 while not r.complete():
                     try:
+                        # We're a friend of the response class, so let
+                        # us use the private attribute.
+                        # pylint: disable=W0212
                         if not r._select():
                             if not r.complete():
                                 raise timeout_exc
@@ -532,6 +548,9 @@ class HTTPConnection(object):
                         self.sock = None
                         self._current_response = None
                         if response is not None:
+                            # We're a friend of the response class, so let
+                            # us use the private attribute.
+                            # pylint: disable=W0212
                             response._close()
                         # This if/elif ladder is a bit subtle,
                         # comments in each branch should help.
@@ -566,6 +585,9 @@ class HTTPConnection(object):
                     if response is None:
                         response = self.response_class(
                             r[0], self.timeout, method)
+                    # We're a friend of the response class, so let us
+                    # use the private attribute.
+                    # pylint: disable=W0212
                     response._load_response(data)
                     # Jump to the next select() call so we load more
                     # data if the server is still sending us content.
@@ -578,6 +600,8 @@ class HTTPConnection(object):
             if w and out:
                 try:
                     if getattr(out, 'read', False):
+                        # pylint guesses the type of out incorrectly here
+                        # pylint: disable=E1103
                         data = out.read(OUTGOING_BUFFER_SIZE)
                         if not data:
                             continue
@@ -626,10 +650,14 @@ class HTTPConnection(object):
         self._current_response = response
 
     def getresponse(self):
+        """Returns the response to the most recent request."""
         if self._current_response is None:
             raise httplib.ResponseNotReady()
         r = self._current_response
         while r.headers is None:
+            # We're a friend of the response class, so let us use the
+            # private attribute.
+            # pylint: disable=W0212
             if not r._select() and not r.complete():
                 raise _readers.HTTPRemoteClosedError()
         if r.will_close:
