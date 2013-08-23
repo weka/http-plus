@@ -454,9 +454,8 @@ dotencode
         con = httpplus.HTTPConnection('1.2.3.4:80')
         con._connect()
         con.sock.data = []
-        con.request('GET', '/')
         self.assertRaises(httpplus.HTTPTimeoutException,
-                          con.getresponse)
+                          con.request, 'GET', '/')
 
         expected_req = ('GET / HTTP/1.1\r\n'
                         'Host: 1.2.3.4\r\n'
