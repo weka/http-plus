@@ -77,15 +77,16 @@ dotencode
         con = httpplus.HTTPConnection('localhost:9999')
         con._connect()
         con.sock.data = [expected_response_headers, expected_response_body]
+        s = con.sock
         con.request('GET', '/remote/.hg/requires',
                     headers={'accept-encoding': 'identity',
                              'range': 'bytes=0-',
                              'accept': 'application/mercurial-0.1',
                              'user-agent': 'mercurial/proto-1.0',
                              })
-        self.assertStringEqual(expected_request_one, con.sock.sent)
-        self.assertEqual(con.sock.closed, False)
-        self.assertNotEqual(con.sock.data, [])
+        self.assertStringEqual(expected_request_one, s.sent)
+        self.assertEqual(s.closed, False)
+        self.assertNotEqual(s.data, [])
         self.assert_(con.busy())
         resp = con.getresponse()
         self.assertStringEqual(resp.read(), expected_response_body)
