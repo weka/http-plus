@@ -43,12 +43,12 @@ def make_preloaded_socket(data, close=False):
     Useful for https proxy tests because we have to read from the
     socket during _connect rather than later on.
     """
-    def s(*args, **kwargs):
+    def preloaded_socket(*args, **kwargs):
         sock = util.MockSocket(*args, **kwargs)
         sock.early_data = data[:]
         sock.close_on_empty = close
         return sock
-    return s
+    return preloaded_socket
 
 
 class ProxyHttpTest(util.HttpTestBase, unittest.TestCase):
