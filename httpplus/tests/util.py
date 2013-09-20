@@ -187,7 +187,7 @@ class HttpTestBase(object):
                                     'see stdout for details'))
             # pylint: enable=no-member
         except:
-            add_nl = lambda li: map(lambda x: x + '\n', li)
+            add_nl = lambda li: [x + '\n' for x in li]
             print 'failed expectation:'
             print ''.join(difflib.unified_diff(
                 add_nl(l.splitlines()), add_nl(r.splitlines()),
