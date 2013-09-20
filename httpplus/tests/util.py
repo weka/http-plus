@@ -110,7 +110,7 @@ class MockSocket(object):
 def mockselect(r, w, x, timeout=0): # pylint: disable=W0613
     """Simple mock for select()
     """
-    readable = filter(lambda s: s.ready_for_read, r)
+    readable = [s for s in r if s.ready_for_read]
     return readable, w[:], []
 
 
