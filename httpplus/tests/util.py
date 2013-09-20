@@ -114,7 +114,7 @@ def mockselect(r, w, x, timeout=0): # pylint: disable=W0613
     return readable, w[:], []
 
 
-class MockSSLSocket(object):
+class MockSSLSocket(object): # pylint: disable=too-few-public-methods
     def __init__(self, sock):
         self._sock = sock
         self._fail_recv = True
@@ -138,7 +138,7 @@ class MockSSLSocket(object):
 
 # Mock sslwrap doesn't need to use these args, silence lint
 #
-# pylint: disable=W0613
+# pylint: disable=unused-argument,too-many-arguments
 def mocksslwrap(sock, keyfile=None, certfile=None,
                 server_side=False, cert_reqs=httpplus.socketutil.CERT_NONE,
                 ssl_version=None, ca_certs=None,
@@ -147,7 +147,7 @@ def mocksslwrap(sock, keyfile=None, certfile=None,
     assert sock.blocking, ('wrapping a socket with ssl requires that '
                            'it be in blocking mode.')
     return MockSSLSocket(sock)
-# pylint: enable=W0613
+# pylint: enable=unused-argument,too-many-arguments
 
 
 def mockgetaddrinfo(host, port, unused, streamtype):
@@ -160,6 +160,7 @@ def mockgetaddrinfo(host, port, unused, streamtype):
 
 
 class HttpTestBase(object):
+    # pylint: disable=invalid-name,missing-docstring
     def setUp(self):
         self.orig_socket = socket.socket
         socket.socket = MockSocket
@@ -181,8 +182,10 @@ class HttpTestBase(object):
 
     def assertStringEqual(self, l, r):
         try:
+            # pylint: disable=no-member
             self.assertEqual(l, r, ('failed string equality check, '
                                     'see stdout for details'))
+            # pylint: enable=no-member
         except:
             add_nl = lambda li: map(lambda x: x + '\n', li)
             print 'failed expectation:'
