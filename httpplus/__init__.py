@@ -40,11 +40,11 @@ from __future__ import absolute_import
 
 # Many functions in this file have too many arguments.
 # pylint: disable=R0913
-
+import email
+import email.message
 import errno
 import inspect
 import logging
-import rfc822
 import select
 import socket
 
@@ -91,6 +91,35 @@ _END_HEADERS = EOL * 2
 # default here.
 TIMEOUT_ASSUME_CONTINUE = 1
 TIMEOUT_DEFAULT = None
+
+
+class _CompatMessage(email.message.Message):
+    """Workaround for rfc822.Message and email.message.Message API diffs."""
+
+    def _reprocess_headers(self):
+        """Rewrite header values to match httplib behavior.
+
+        httplib.HTTPMessage and email.message.Message handle
+        continuations in very different ways. httplib.HTTPMessage
+        always produces a newline and a space, so we reprocess the
+        results from email.message.Message to match what we expect.
+
+        TODO: figure out a better solution than this.
+
+        """
+        new = []
+        for h, v in self._headers:
+            if '\r\n' in v:
+                v = '\n'.join([' ' + x.lstrip() for x in v.split('\r\n')])[1:]
+            new.append((h, v))
+        self._headers = new
+
+
+    def getheaders(self, key):
+        return self.get_all(key)
+
+    def getheader(self, key, default=None):
+        return self.get(key, failobj=default)
 
 
 class HTTPResponse(object):
@@ -142,7 +171,7 @@ class HTTPResponse(object):
         return self.headers.getheader(header, default=default)
 
     def getheaders(self):
-        return self.headers.items()
+        return [(k.lower(), v) for k, v in self.headers.items()]
 
     def readline(self):
         """Read a single line from the response body.
@@ -253,7 +282,8 @@ class HTTPResponse(object):
         self.status = int(self.status)
         if self._eol != EOL:
             hdrs = hdrs.replace(self._eol, '\r\n')
-        headers = rfc822.Message(io.StringIO(hdrs))
+        headers = email.message_from_string(hdrs, _class=_CompatMessage)
+        headers._reprocess_headers()
         content_len = None
         if HDR_CONTENT_LENGTH in headers:
             content_len = int(headers[HDR_CONTENT_LENGTH])
