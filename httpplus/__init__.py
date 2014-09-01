@@ -698,8 +698,8 @@ class HTTPConnection(object):
                     # data at all, and in all probability the socket was
                     # closed before the server even saw our request. Try
                     # the request again on a fresh socket.
-                    logging.debug('response._select() failed during request().'
-                                  ' Assuming request needs to be retried.')
+                    logger.debug('response._select() failed during request().'
+                                 ' Assuming request needs to be retried.')
                     self.sock = None
                     # Call this method explicitly to re-try the
                     # request. We don't use self.request() because
