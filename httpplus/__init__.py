@@ -124,6 +124,12 @@ class HTTPResponse(object):
             # pylint: disable=W0212
             self._reader._close()
 
+    def getheader(self, header, default=None):
+        return self.headers.getheader(header, default=default)
+
+    def getheaders(self):
+        return self.headers.items()
+
     def readline(self):
         """Read a single line from the response body.
 
