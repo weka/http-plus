@@ -11,7 +11,17 @@ import httpplus
 
 
 def _application(environ, start_response):
-    start_response('200 OK', [('OneLine', 'This header has one line.')])
+    start_response('200 OK', [('OneLine', 'This header has one line.'),
+                              # Note: this header looks funny because
+                              # SimpleHTTPServer has a bug that
+                              # prevents it from correctly writing out
+                              # multi-line headers, but the nature of
+                              # the bug means we can pre-insert the
+                              # \r\n and the leading tab on the second
+                              # line and the multi-line header will
+                              # work out.
+                              ('TwoLines', 'This header\r\n\thas two lines.'),
+                          ])
     return ['some response bytes']
 
 
@@ -46,6 +56,7 @@ class TestHttplib(unittest.TestCase):
         expect = [
             ('content-length', '19'),
             ('oneline', 'This header has one line.'),
+            ('twolines', 'This header\n has two lines.'),
         ]
         self.assertEqual(expect,
                          sorted(_skip_unstable_headers(r.getheaders())))
