@@ -21,6 +21,7 @@ def _application(environ, start_response):
                               # line and the multi-line header will
                               # work out.
                               ('TwoLines', 'This header\r\n\thas two lines.'),
+                              ('TwoLines2', 'Also\r\n  has two lines.'),
                           ])
     return ['some response bytes']
 
@@ -57,6 +58,7 @@ class TestHttplib(unittest.TestCase):
             ('content-length', '19'),
             ('oneline', 'This header has one line.'),
             ('twolines', 'This header\n has two lines.'),
+            ('twolines2', 'Also\n has two lines.'),
         ]
         self.assertEqual(expect,
                          sorted(_skip_unstable_headers(r.getheaders())))
