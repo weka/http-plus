@@ -594,7 +594,21 @@ class HTTPConnection(object):
 
         logger.info('sending %s request for %s to %s on port %s',
                     method, path, self.host, self.port)
+
         hdrs = _foldheaders(headers)
+        # Figure out headers that have to be computed from the request
+        # body.
+        chunked = False
+        if body and HDR_CONTENT_LENGTH not in hdrs:
+            if getattr(body, '__len__', False):
+                hdrs[HDR_CONTENT_LENGTH] = (HDR_CONTENT_LENGTH, len(body))
+            elif getattr(body, 'read', False):
+                hdrs[HDR_XFER_ENCODING] = (HDR_XFER_ENCODING,
+                                           XFER_ENCODING_CHUNKED)
+                chunked = True
+            else:
+                raise BadRequestData('body has no __len__() nor read()')
+        # Figure out expect-continue header
         if hdrs.get('expect', ('', ''))[1].lower() == '100-continue':
             expect_continue = True
         elif expect_continue:
@@ -608,25 +622,15 @@ class HTTPConnection(object):
             pa = hdrs.pop('proxy-authorization', None)
             if pa is not None:
                 pheaders['proxy-authorization'] = pa
-
-        chunked = False
-        if body and HDR_CONTENT_LENGTH not in hdrs:
-            if getattr(body, '__len__', False):
-                hdrs[HDR_CONTENT_LENGTH] = (HDR_CONTENT_LENGTH, len(body))
-            elif getattr(body, 'read', False):
-                hdrs[HDR_XFER_ENCODING] = (HDR_XFER_ENCODING,
-                                           XFER_ENCODING_CHUNKED)
-                chunked = True
-            else:
-                raise BadRequestData('body has no __len__() nor read()')
+        # Build header data
+        outgoing_headers = self._buildheaders(
+            method, path, hdrs, self.http_version)
 
         # If we're reusing the underlying socket, there are some
         # conditions where we'll want to retry, so make a note of the
         # state of self.sock
         fresh_socket = self.sock is None
         self._connect(pheaders)
-        outgoing_headers = self._buildheaders(
-            method, path, hdrs, self.http_version)
         response = None
         first = True
 
