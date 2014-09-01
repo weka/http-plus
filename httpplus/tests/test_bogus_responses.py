@@ -46,7 +46,7 @@ class SimpleHttpTest(util.HttpTestBase, unittest.TestCase):
 
     def bogusEOL(self, eol):
         con = httpplus.HTTPConnection('1.2.3.4:80')
-        con._connect()
+        con._connect({})
         con.sock.data = ['HTTP/1.1 200 OK%s' % eol,
                          'Server: BogusServer 1.0%s' % eol,
                          'Content-Length: 10',
