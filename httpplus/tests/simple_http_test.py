@@ -41,7 +41,7 @@ class SimpleHttpTest(util.HttpTestBase, unittest.TestCase):
 
     def _run_simple_test(self, host, server_data, expected_req, expected_data):
         con = httpplus.HTTPConnection(host)
-        con._connect()
+        con._connect({})
         con.sock.data = server_data
         con.request('GET', '/')
 
@@ -50,7 +50,7 @@ class SimpleHttpTest(util.HttpTestBase, unittest.TestCase):
 
     def test_broken_data_obj(self):
         con = httpplus.HTTPConnection('1.2.3.4:80')
-        con._connect()
+        con._connect({})
         self.assertRaises(httpplus.BadRequestData,
                           con.request, 'POST', '/', body=1)
 
@@ -77,7 +77,7 @@ fncache
 dotencode
 """
         con = httpplus.HTTPConnection('localhost:9999')
-        con._connect()
+        con._connect({})
         con.sock.data = [expected_response_headers, expected_response_body]
         s = con.sock
         con.request('GET', '/remote/.hg/requires',
@@ -99,7 +99,7 @@ dotencode
 
     def test_multiline_header(self):
         con = httpplus.HTTPConnection('1.2.3.4:80')
-        con._connect()
+        con._connect({})
         con.sock.data = ['HTTP/1.1 200 OK\r\n',
                          'Server: BogusServer 1.0\r\n',
                          'Multiline: Value\r\n',
@@ -126,7 +126,7 @@ dotencode
 
     def testSimpleRequest(self):
         con = httpplus.HTTPConnection('1.2.3.4:80')
-        con._connect()
+        con._connect({})
         con.sock.data = ['HTTP/1.1 200 OK\r\n',
                          'Server: BogusServer 1.0\r\n',
                          'MultiHeader: Value\r\n'
@@ -153,7 +153,7 @@ dotencode
 
     def testHeaderlessResponse(self):
         con = httpplus.HTTPConnection('1.2.3.4', use_ssl=False)
-        con._connect()
+        con._connect({})
         con.sock.data = ['HTTP/1.1 200 OK\r\n',
                          '\r\n'
                          '1234567890'
@@ -174,7 +174,7 @@ dotencode
 
     def testReadline(self):
         con = httpplus.HTTPConnection('1.2.3.4')
-        con._connect()
+        con._connect({})
         con.sock.data = ['HTTP/1.1 200 OK\r\n',
                          'Server: BogusServer 1.0\r\n',
                          'Connection: Close\r\n',
@@ -197,7 +197,7 @@ dotencode
 
     def testReadlineTrickle(self):
         con = httpplus.HTTPConnection('1.2.3.4')
-        con._connect()
+        con._connect({})
         # make sure it trickles in one byte at a time
         # so that we touch all the cases in readline
         con.sock.data = list(''.join(
@@ -223,7 +223,7 @@ dotencode
 
     def testVariousReads(self):
         con = httpplus.HTTPConnection('1.2.3.4')
-        con._connect()
+        con._connect({})
         # make sure it trickles in one byte at a time
         # so that we touch all the cases in readline
         con.sock.data = list(''.join(
@@ -255,7 +255,7 @@ dotencode
 
     def testZeroLengthBody(self):
         con = httpplus.HTTPConnection('1.2.3.4')
-        con._connect()
+        con._connect({})
         # make sure it trickles in one byte at a time
         # so that we touch all the cases in readline
         con.sock.data = list(''.join(
@@ -308,7 +308,7 @@ dotencode
 
     def testEarlyContinueResponse(self):
         con = httpplus.HTTPConnection('1.2.3.4:80')
-        con._connect()
+        con._connect({})
         sock = con.sock
         sock.data = ['HTTP/1.1 403 Forbidden\r\n',
                          'Server: BogusServer 1.0\r\n',
@@ -323,7 +323,7 @@ dotencode
 
     def testEarlyContinueResponseNoContentLength(self):
         con = httpplus.HTTPConnection('1.2.3.4:80')
-        con._connect()
+        con._connect({})
         sock = con.sock
         sock.data = ['HTTP/1.1 403 Forbidden\r\n',
                          'Server: BogusServer 1.0\r\n',
@@ -338,7 +338,7 @@ dotencode
 
     def testDeniedAfterContinueTimeoutExpires(self):
         con = httpplus.HTTPConnection('1.2.3.4:80')
-        con._connect()
+        con._connect({})
         sock = con.sock
         sock.data = ['HTTP/1.1 403 Forbidden\r\n',
                      'Server: BogusServer 1.0\r\n',
@@ -366,7 +366,7 @@ dotencode
 
     def testPostData(self):
         con = httpplus.HTTPConnection('1.2.3.4:80')
-        con._connect()
+        con._connect({})
         sock = con.sock
         sock.read_wait_sentinel = 'POST data'
         sock.early_data = ['HTTP/1.1 100 Co', 'ntinue\r\n\r\n']
@@ -383,7 +383,7 @@ dotencode
 
     def testServerWithoutContinue(self):
         con = httpplus.HTTPConnection('1.2.3.4:80')
-        con._connect()
+        con._connect({})
         sock = con.sock
         sock.read_wait_sentinel = 'POST data'
         sock.data = ['HTTP/1.1 200 OK\r\n',
@@ -399,7 +399,7 @@ dotencode
 
     def testServerWithSlowContinue(self):
         con = httpplus.HTTPConnection('1.2.3.4:80')
-        con._connect()
+        con._connect({})
         sock = con.sock
         sock.read_wait_sentinel = 'POST data'
         sock.data = ['HTTP/1.1 100 ', 'Continue\r\n\r\n',
@@ -418,7 +418,7 @@ dotencode
 
     def testSlowConnection(self):
         con = httpplus.HTTPConnection('1.2.3.4:80')
-        con._connect()
+        con._connect({})
         # simulate one byte arriving at a time, to check for various
         # corner cases
         con.sock.data = list('HTTP/1.1 200 OK\r\n'
@@ -438,7 +438,7 @@ dotencode
 
     def testCloseAfterNotAllOfHeaders(self):
         con = httpplus.HTTPConnection('1.2.3.4:80')
-        con._connect()
+        con._connect({})
         con.sock.data = ['HTTP/1.1 200 OK\r\n',
                          'Server: NO CARRIER']
         con.sock.close_on_empty = True
@@ -454,7 +454,7 @@ dotencode
 
     def testTimeout(self):
         con = httpplus.HTTPConnection('1.2.3.4:80')
-        con._connect()
+        con._connect({})
         con.sock.data = []
         self.assertRaises(httpplus.HTTPTimeoutException,
                           con.request, 'GET', '/')
@@ -482,7 +482,7 @@ dotencode
 
         socket.socket = closingsocket
         con = httpplus.HTTPConnection('1.2.3.4:80')
-        con._connect()
+        con._connect({})
         con.request('GET', '/')
         r1 = con.getresponse()
         r1.read()
@@ -493,7 +493,7 @@ dotencode
 
     def test_server_closes_before_end_of_body(self):
         con = httpplus.HTTPConnection('1.2.3.4:80')
-        con._connect()
+        con._connect({})
         s = con.sock
         s.data = ['HTTP/1.1 200 OK\r\n',
                   'Server: BogusServer 1.0\r\n',

@@ -55,7 +55,7 @@ class ProxyHttpTest(util.HttpTestBase, unittest.TestCase):
 
     def _run_simple_test(self, host, server_data, expected_req, expected_data):
         con = httpplus.HTTPConnection(host)
-        con._connect()
+        con._connect({})
         con.sock.data = server_data
         con.request('GET', '/')
 
@@ -65,7 +65,7 @@ class ProxyHttpTest(util.HttpTestBase, unittest.TestCase):
     def testSimpleRequest(self):
         con = httpplus.HTTPConnection('1.2.3.4:80',
                                   proxy_hostport=('magicproxy', 4242))
-        con._connect()
+        con._connect({})
         con.sock.data = ['HTTP/1.1 200 OK\r\n',
                          'Server: BogusServer 1.0\r\n',
                          'MultiHeader: Value\r\n'
@@ -90,16 +90,62 @@ class ProxyHttpTest(util.HttpTestBase, unittest.TestCase):
         self.assertEqual(['BogusServer 1.0'],
                          resp.headers.getheaders('server'))
 
-    def testSSLRequest(self):
+    def testProxyHeadersNoHostPortRaises(self):
+        self.assertRaises(ValueError, httpplus.HTTPConnection,
+                          '1.2.3.4:443',
+                          proxy_headers={'Proxy-Authorization': 'yes!'})
+
+    def testSSLRequestProxyAuthInRequestHeaders(self):
+        ph = {'Proxy-Authorization': 'hello'}
         con = httpplus.HTTPConnection('1.2.3.4:443',
-                                  proxy_hostport=('magicproxy', 4242))
+                                      proxy_hostport=('magicproxy', 4242))
         socket.socket = make_preloaded_socket(
             ['HTTP/1.1 200 OK\r\n',
              'Server: BogusServer 1.0\r\n',
              'Content-Length: 10\r\n',
              '\r\n'
              '1234567890'])
-        con._connect()
+        con._connect(httpplus._foldheaders(ph))
+        con.sock.data = ['HTTP/1.1 200 OK\r\n',
+                         'Server: BogusServer 1.0\r\n',
+                         'Content-Length: 10\r\n',
+                         '\r\n'
+                         '1234567890'
+                         ]
+        connect_sent = con.sock.sent
+        con.sock.sent = ''
+        con.request('GET', '/', headers=ph)
+
+        expected_connect = ('CONNECT 1.2.3.4:443 HTTP/1.0\r\n'
+                            'Host: 1.2.3.4\r\n'
+                            'Proxy-Authorization: hello\r\n'
+                            'accept-encoding: identity\r\n'
+                            '\r\n')
+        expected_request = ('GET / HTTP/1.1\r\n'
+                            'Host: 1.2.3.4\r\n'
+                            'accept-encoding: identity\r\n\r\n')
+
+        self.assertEqual(('127.0.0.42', 4242), con.sock.sa)
+        self.assertStringEqual(expected_connect, connect_sent)
+        self.assertStringEqual(expected_request, con.sock.sent)
+        resp = con.getresponse()
+        self.assertEqual(resp.status, 200)
+        self.assertEqual('1234567890', resp.read())
+        self.assertEqual(['BogusServer 1.0'],
+                         resp.headers.getheaders('server'))
+
+    def testSSLRequest(self):
+        ph = {'Proxy-Authorization': 'this string is not meaningful'}
+        con = httpplus.HTTPConnection('1.2.3.4:443',
+                                      proxy_hostport=('magicproxy', 4242),
+                                      proxy_headers=ph)
+        socket.socket = make_preloaded_socket(
+            ['HTTP/1.1 200 OK\r\n',
+             'Server: BogusServer 1.0\r\n',
+             'Content-Length: 10\r\n',
+             '\r\n'
+             '1234567890'])
+        con._connect(httpplus._foldheaders(ph))
         con.sock.data = ['HTTP/1.1 200 OK\r\n',
                          'Server: BogusServer 1.0\r\n',
                          'Content-Length: 10\r\n',
@@ -112,6 +158,8 @@ class ProxyHttpTest(util.HttpTestBase, unittest.TestCase):
 
         expected_connect = ('CONNECT 1.2.3.4:443 HTTP/1.0\r\n'
                             'Host: 1.2.3.4\r\n'
+                            'Proxy-Authorization: this string is '
+                            'not meaningful\r\n'
                             'accept-encoding: identity\r\n'
                             '\r\n')
         expected_request = ('GET / HTTP/1.1\r\n'
@@ -134,7 +182,7 @@ class ProxyHttpTest(util.HttpTestBase, unittest.TestCase):
             ['HTTP/1.1 200 OK\r\n',
              'Server: BogusServer 1.0\r\n',
              '\r\n'])
-        con._connect()
+        con._connect({})
         con.sock.data = ['HTTP/1.1 200 OK\r\n',
                          'Server: BogusServer 1.0\r\n',
                          'Content-Length: 10\r\n',
@@ -168,6 +216,6 @@ class ProxyHttpTest(util.HttpTestBase, unittest.TestCase):
         socket.socket = make_preloaded_socket(
             ['HTTP/1.1 407 Proxy Authentication Required\r\n\r\n'], close=True)
         self.assertRaises(httpplus.HTTPProxyConnectFailedException,
-                          con._connect)
+                          con._connect, {})
         self.assertRaises(httpplus.HTTPProxyConnectFailedException,
                           con.request, 'GET', '/')

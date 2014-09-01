@@ -40,7 +40,7 @@ import util
 class HttpSslTest(util.HttpTestBase, unittest.TestCase):
     def testSslRereadRequired(self):
         con = httpplus.HTTPConnection('1.2.3.4:443')
-        con._connect()
+        con._connect({})
         # extend the list instead of assign because of how
         # MockSSLSocket works.
         con.sock.data = ['HTTP/1.1 200 OK\r\n',
@@ -69,7 +69,7 @@ class HttpSslTest(util.HttpTestBase, unittest.TestCase):
 
     def testSslRereadInEarlyResponse(self):
         con = httpplus.HTTPConnection('1.2.3.4:443')
-        con._connect()
+        con._connect({})
         con.sock.early_data = ['HTTP/1.1 200 OK\r\n',
                                'Server: BogusServer 1.0\r\n',
                                'MultiHeader: Value\r\n'

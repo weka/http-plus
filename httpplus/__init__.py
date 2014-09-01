@@ -300,7 +300,8 @@ class HTTPConnection(object):
     def __init__(self, host, port=None, use_ssl=None, ssl_validator=None,
                  timeout=TIMEOUT_DEFAULT,
                  continue_timeout=TIMEOUT_ASSUME_CONTINUE,
-                 proxy_hostport=None, ssl_wrap_socket=None, **ssl_opts):
+                 proxy_hostport=None, proxy_headers=None,
+                 ssl_wrap_socket=None, **ssl_opts):
         """Create a new HTTPConnection.
 
         Args:
@@ -315,6 +316,13 @@ class HTTPConnection(object):
                    "100 Continue" response. Default is TIMEOUT_ASSUME_CONTINUE.
           proxy_hostport: Optional. Tuple of (host, port) to use as an http
                        proxy for the connection. Default is to not use a proxy.
+          proxy_headers: Optional dict of header keys and values to send to
+                         a proxy when using CONNECT. For compatibility with
+                         httplib, the Proxy-Authorization header may be
+                         specified in headers for request(), which will clobber
+                         any such header specified here if specified. Providing
+                         this option and not proxy_hostport will raise an
+                         ValueError.
           ssl_wrap_socket: Optional function to use for wrapping
             sockets. If unspecified, the one from the ssl module will
             be used if available, or something that's compatible with
@@ -351,13 +359,20 @@ class HTTPConnection(object):
         self._current_response_taken = False
         if proxy_hostport is None:
             self._proxy_host = self._proxy_port = None
+            if proxy_headers:
+                raise ValueError(
+                    'proxy_headers may not be specified unless '
+                    'proxy_hostport is also specified.')
+            else:
+                self._proxy_headers = {}
         else:
             self._proxy_host, self._proxy_port = proxy_hostport
+            self._proxy_headers = _foldheaders(proxy_headers or {})
 
         self.timeout = timeout
         self.continue_timeout = continue_timeout
 
-    def _connect(self):
+    def _connect(self, proxy_headers):
         """Connect to the host and port specified in __init__."""
         if self.sock:
             return
@@ -367,10 +382,9 @@ class HTTPConnection(object):
             sock = socketutil.create_connection((self._proxy_host,
                                                  self._proxy_port))
             if self.ssl:
-                # TODO proxy header support
                 data = self._buildheaders('CONNECT', '%s:%d' % (self.host,
                                                                 self.port),
-                                          {}, HTTP_VER_1_0)
+                                          proxy_headers, HTTP_VER_1_0)
                 sock.send(data)
                 sock.setblocking(0)
                 r = self.response_class(sock, self.timeout, 'CONNECT')
@@ -473,10 +487,10 @@ class HTTPConnection(object):
             return True
         return False
 
-    def _reconnect(self, where):
+    def _reconnect(self, where, pheaders):
         logger.info('reconnecting during %s', where)
         self.close()
-        self._connect()
+        self._connect(pheaders)
 
     def request(self, method, path, body=None, headers={},
                 expect_continue=False):
@@ -502,6 +516,15 @@ class HTTPConnection(object):
             expect_continue = True
         elif expect_continue:
             hdrs['expect'] = ('Expect', '100-Continue')
+        # httplib compatibility: if the user specified a
+        # proxy-authorization header, that's actually intended for a
+        # proxy CONNECT action, not the real request, but only if
+        # we're going to use a proxy.
+        pheaders = dict(self._proxy_headers)
+        if self._proxy_host and self.ssl:
+            pa = hdrs.pop('proxy-authorization', None)
+            if pa is not None:
+                pheaders['proxy-authorization'] = pa
 
         chunked = False
         if body and HDR_CONTENT_LENGTH not in hdrs:
@@ -518,7 +541,7 @@ class HTTPConnection(object):
         # conditions where we'll want to retry, so make a note of the
         # state of self.sock
         fresh_socket = self.sock is None
-        self._connect()
+        self._connect(pheaders)
         outgoing_headers = self._buildheaders(
             method, path, hdrs, self.http_version)
         response = None
@@ -593,7 +616,7 @@ class HTTPConnection(object):
                             logger.info(
                                 'Connection appeared closed in read on first'
                                 ' request loop iteration, will retry.')
-                            self._reconnect('read')
+                            self._reconnect('read', pheaders)
                             continue
                         else:
                             # We didn't just send the first data hunk,
@@ -650,7 +673,7 @@ class HTTPConnection(object):
                     elif (e[0] not in (errno.ECONNRESET, errno.EPIPE)
                           and not first):
                         raise
-                    self._reconnect('write')
+                    self._reconnect('write', pheaders)
                     amt = self.sock.send(out)
                 logger.debug('sent %d', amt)
                 first = False

@@ -53,7 +53,7 @@ def chunkedblock(x, eol='\r\n'):
 class ChunkedTransferTest(util.HttpTestBase, unittest.TestCase):
     def testChunkedUpload(self):
         con = httpplus.HTTPConnection('1.2.3.4:80')
-        con._connect()
+        con._connect({})
         sock = con.sock
         sock.read_wait_sentinel = '0\r\n\r\n'
         sock.data = ['HTTP/1.1 200 OK\r\n',
@@ -80,7 +80,7 @@ class ChunkedTransferTest(util.HttpTestBase, unittest.TestCase):
 
     def testChunkedDownload(self):
         con = httpplus.HTTPConnection('1.2.3.4:80')
-        con._connect()
+        con._connect({})
         sock = con.sock
         sock.data = ['HTTP/1.1 200 OK\r\n',
                      'Server: BogusServer 1.0\r\n',
@@ -95,7 +95,7 @@ class ChunkedTransferTest(util.HttpTestBase, unittest.TestCase):
 
     def testChunkedDownloadOddReadBoundaries(self):
         con = httpplus.HTTPConnection('1.2.3.4:80')
-        con._connect()
+        con._connect({})
         sock = con.sock
         sock.data = ['HTTP/1.1 200 OK\r\n',
                      'Server: BogusServer 1.0\r\n',
@@ -112,7 +112,7 @@ class ChunkedTransferTest(util.HttpTestBase, unittest.TestCase):
 
     def testChunkedDownloadBadEOL(self):
         con = httpplus.HTTPConnection('1.2.3.4:80')
-        con._connect()
+        con._connect({})
         sock = con.sock
         sock.data = ['HTTP/1.1 200 OK\n',
                      'Server: BogusServer 1.0\n',
@@ -127,7 +127,7 @@ class ChunkedTransferTest(util.HttpTestBase, unittest.TestCase):
 
     def testChunkedDownloadPartialChunkBadEOL(self):
         con = httpplus.HTTPConnection('1.2.3.4:80')
-        con._connect()
+        con._connect({})
         sock = con.sock
         sock.data = ['HTTP/1.1 200 OK\n',
                      'Server: BogusServer 1.0\n',
@@ -142,7 +142,7 @@ class ChunkedTransferTest(util.HttpTestBase, unittest.TestCase):
 
     def testChunkedDownloadPartialChunk(self):
         con = httpplus.HTTPConnection('1.2.3.4:80')
-        con._connect()
+        con._connect({})
         sock = con.sock
         sock.data = ['HTTP/1.1 200 OK\r\n',
                      'Server: BogusServer 1.0\r\n',
@@ -156,7 +156,7 @@ class ChunkedTransferTest(util.HttpTestBase, unittest.TestCase):
 
     def testChunkedDownloadEarlyHangup(self):
         con = httpplus.HTTPConnection('1.2.3.4:80')
-        con._connect()
+        con._connect({})
         sock = con.sock
         broken = chunkedblock('hi'*20)[:-1]
         sock.data = ['HTTP/1.1 200 OK\r\n',
