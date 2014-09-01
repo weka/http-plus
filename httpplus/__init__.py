@@ -764,6 +764,7 @@ class HTTPConnection(object):
                     body = out[amt:]
                 else:
                     outgoing_headers = out[amt:]
+        # End of request-sending loop.
 
         # close if the server response said to or responded before eating
         # the whole request
