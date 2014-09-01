@@ -279,6 +279,14 @@ class HTTPResponse(object):
         # pylint: disable=W0212
         self._load_response = self._reader._load
 
+def _foldheaders(headers):
+    """Given some headers, rework them so we can safely overwrite values.
+
+    >>> _foldheaders({'Accept-Encoding': 'wat'})
+    {'accept-encoding': ('Accept-Encoding', 'wat')}
+    """
+    return dict((k.lower(), (k, v)) for k, v in headers.iteritems())
+
 
 class HTTPConnection(object):
     """Connection to a single http server.
@@ -489,7 +497,7 @@ class HTTPConnection(object):
 
         logger.info('sending %s request for %s to %s on port %s',
                     method, path, self.host, self.port)
-        hdrs = dict((k.lower(), (k, v)) for k, v in headers.iteritems())
+        hdrs = _foldheaders(headers)
         if hdrs.get('expect', ('', ''))[1].lower() == '100-continue':
             expect_continue = True
         elif expect_continue:
