@@ -1,6 +1,6 @@
 This is *mostly* drop-in compatible with httplib.HTTPConnection. That
 was maintained in as many places as seemed sensible. Sadly, some areas
-it didn't make much sense for variying reasons. The (known) deviations
+it didn't make much sense for varying reasons. The (known) deviations
 are:
 
 1) HTTPSConnection doesn't exist - use HTTPConnection(...,
