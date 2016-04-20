@@ -34,6 +34,8 @@ Server implementations that respond with only LF instead of CRLF have
 been observed. Checking against ones that use only CR is a hedge
 against that potential insanit.y
 """
+from __future__ import absolute_import
+
 import unittest
 
 import httpplus

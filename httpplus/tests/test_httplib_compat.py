@@ -1,4 +1,5 @@
 """Tests to verify API compatibility with httplib."""
+from __future__ import absolute_import
 
 import socket
 import threading
