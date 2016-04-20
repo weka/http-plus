@@ -28,7 +28,7 @@
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #
 # pylint: disable=protected-access,missing-docstring,too-few-public-methods,invalid-name,too-many-public-methods
-from __future__ import absolute_import
+from __future__ import absolute_import, print_function
 
 import unittest
 
@@ -56,7 +56,7 @@ class ChunkedReaderTest(unittest.TestCase):
                            start in xrange(0, len(corpus), step))
             for istep in xrange(1, len(data)):
                 rdr = _readers.ChunkedReader('\r\n')
-                print 'step', step, 'load', istep
+                print('step', step, 'load', istep)
                 for start in xrange(0, len(data), istep):
                     rdr._load(data[start:start+istep])
                 rdr._load(chunkedblock(''))
