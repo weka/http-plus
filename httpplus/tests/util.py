@@ -28,7 +28,7 @@
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #
 # pylint: disable=missing-docstring
-from __future__ import absolute_import
+from __future__ import absolute_import, print_function
 
 import difflib
 import socket
@@ -190,10 +190,10 @@ class HttpTestBase(object):
             # pylint: enable=no-member
         except:
             add_nl = lambda li: [x + '\n' for x in li]
-            print 'failed expectation:'
-            print ''.join(difflib.unified_diff(
+            print('failed expectation:')
+            print(''.join(difflib.unified_diff(
                 add_nl(l.splitlines()), add_nl(r.splitlines()),
-                fromfile='expected', tofile='got'))
+                fromfile='expected', tofile='got')))
             raise
 
     def doPost(self, con, expect_body, body_to_send='This is some POST data'):
