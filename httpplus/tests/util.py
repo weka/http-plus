@@ -28,6 +28,8 @@
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #
 # pylint: disable=missing-docstring
+from __future__ import absolute_import
+
 import difflib
 import socket
 
