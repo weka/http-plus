@@ -1,13 +1,13 @@
 """Tests to verify API compatibility with httplib."""
 
-import httplib
 import socket
 import threading
 import unittest
+
 from wsgiref import simple_server
 
 import httpplus
-
+httplib = httpplus.httplib
 
 def _application(environ, start_response):
     start_response('200 OK', [('OneLine', 'This header has one line.'),

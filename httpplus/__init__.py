@@ -42,7 +42,6 @@ from __future__ import absolute_import
 # pylint: disable=R0913
 
 import errno
-import httplib
 import logging
 import rfc822
 import select
@@ -53,6 +52,12 @@ try:
     io.StringIO
 except ImportError:
     import io
+
+try:
+    import httplib
+    httplib.HTTPException
+except ImportError:
+    import http.client as httplib
 
 from . import _readers
 from . import socketutil
