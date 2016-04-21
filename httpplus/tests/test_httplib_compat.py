@@ -1,6 +1,5 @@
 """Tests to verify API compatibility with httplib."""
 
-import cStringIO
 import httplib
 import socket
 import threading
