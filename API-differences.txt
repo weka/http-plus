@@ -1,0 +1,14 @@
+This is *mostly* drop-in compatible with httplib.HTTPConnection. That
+was maintained in as many places as seemed sensible. Sadly, some areas
+it didn't make much sense for variying reasons. The (known) deviations
+are:
+
+1) HTTPSConnection doesn't exist - use HTTPConnection(...,
+use_ssl=True) instead. use_ssl is implied if connecting on port 443,
+(but can be disabled with an explicit use_ssl=False), and use_ssl
+implies port 443 if no port is specified.
+
+2) Proxies are specified to the HTTPConnection constructor as a
+separate host-port pair, rather than specifying the proxy host-port
+pair as the server in the constructor. As such, request() only takes
+absolute paths rather than full URIs.
