@@ -28,8 +28,15 @@
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #
 # pylint: disable=protected-access,missing-docstring,too-few-public-methods,invalid-name,too-many-public-methods
-import cStringIO
+from __future__ import absolute_import
+
 import unittest
+
+try:
+    import cStringIO as io
+    io.StringIO
+except ImportError:
+    import io
 
 import httpplus
 
@@ -63,7 +70,7 @@ class ChunkedTransferTest(util.HttpTestBase, unittest.TestCase):
                      "Thanks"]
 
         zz = 'zz\n'
-        con.request('POST', '/', body=cStringIO.StringIO(
+        con.request('POST', '/', body=io.StringIO(
             (zz * (0x8010 / 3)) + 'end-of-body'))
         expected_req = ('POST / HTTP/1.1\r\n'
                         'transfer-encoding: chunked\r\n'
