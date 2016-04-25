@@ -41,13 +41,18 @@ from __future__ import absolute_import
 # Many functions in this file have too many arguments.
 # pylint: disable=R0913
 
-import cStringIO
 import errno
 import httplib
 import logging
 import rfc822
 import select
 import socket
+
+try:
+    import cStringIO as io
+    io.StringIO
+except ImportError:
+    import io
 
 from . import _readers
 from . import socketutil
@@ -240,7 +245,7 @@ class HTTPResponse(object):
         self.status = int(self.status)
         if self._eol != EOL:
             hdrs = hdrs.replace(self._eol, '\r\n')
-        headers = rfc822.Message(cStringIO.StringIO(hdrs))
+        headers = rfc822.Message(io.StringIO(hdrs))
         content_len = None
         if HDR_CONTENT_LENGTH in headers:
             content_len = int(headers[HDR_CONTENT_LENGTH])
