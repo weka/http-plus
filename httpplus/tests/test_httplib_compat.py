@@ -53,7 +53,7 @@ class TestHttplib(unittest.TestCase):
         c.request('GET', '/')
         r = c.getresponse()
         self.assertEqual('This header has one line.', r.getheader('OneLine'))
-        self.assertIsNone(r.getheader('This Header Does Not Exist'))
+        self.assertEqual(None, r.getheader('This Header Does Not Exist'))
         expect = [
             ('content-length', '19'),
             ('oneline', 'This header has one line.'),
