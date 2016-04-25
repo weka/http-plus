@@ -59,8 +59,10 @@ try:
 except ImportError:
     import http.client as httplib
 
-from . import _readers
-from . import socketutil
+from . import (
+    _readers,
+    socketutil,
+)
 
 logger = logging.getLogger(__name__)
 

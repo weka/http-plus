@@ -36,7 +36,7 @@ import socket
 import httpplus
 
 # relative import to ease embedding the library
-import util
+from . import util
 
 
 def make_preloaded_socket(data, close=False):
