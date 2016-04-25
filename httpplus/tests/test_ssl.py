@@ -35,7 +35,7 @@ import unittest
 import httpplus
 
 # relative import to ease embedding the library
-import util
+from . import util
 
 
 

@@ -36,7 +36,7 @@ import unittest
 import httpplus
 
 # relative import to ease embedding the library
-import util
+from . import util
 
 
 class SimpleHttpTest(util.HttpTestBase, unittest.TestCase):
