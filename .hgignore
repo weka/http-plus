@@ -5,4 +5,4 @@ __version__\.py
 \.egg-info
 ^build/
 ^dist/
-^\.tox$
+^\.tox/
