@@ -63,7 +63,6 @@ except ImportError:
 
 from . import (
     _readers,
-    socketutil,
 )
 
 logger = logging.getLogger(__name__)
@@ -430,7 +429,7 @@ class HTTPConnection(object):
         if ssl_wrap_socket is not None:
             _wrap_socket = ssl_wrap_socket
         else:
-            _wrap_socket = socketutil.wrap_socket
+            _wrap_socket = ssl.wrap_socket
         call_wrap_socket = None
         handlesubar = _handlesarg(_wrap_socket, 'server_hostname')
         if handlesubar is True:
@@ -461,8 +460,6 @@ class HTTPConnection(object):
         elif port is None:
             port = (use_ssl and 443 or 80)
         self.port = port
-        if use_ssl and not socketutil.have_ssl:
-            raise Exception('ssl requested but unavailable on this Python')
         self.ssl = use_ssl
         self.ssl_opts = ssl_opts
         self._ssl_validator = ssl_validator

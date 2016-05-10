@@ -143,7 +143,7 @@ class MockSSLSocket(object): # pylint: disable=too-few-public-methods
 #
 # pylint: disable=unused-argument,too-many-arguments
 def mocksslwrap(sock, keyfile=None, certfile=None,
-                server_side=False, cert_reqs=httpplus.socketutil.CERT_NONE,
+                server_side=False, cert_reqs=ssl.CERT_NONE,
                 ssl_version=None, ca_certs=None,
                 do_handshake_on_connect=True,
                 suppress_ragged_eofs=True):
@@ -174,13 +174,13 @@ class HttpTestBase(object):
         self.orig_select = httpplus.select.select
         httpplus.select.select = mockselect
 
-        self.orig_sslwrap = httpplus.socketutil.wrap_socket
-        httpplus.socketutil.wrap_socket = mocksslwrap
+        self.orig_sslwrap = ssl.wrap_socket
+        ssl.wrap_socket = mocksslwrap
 
     def tearDown(self):
         socket.socket = self.orig_socket
         httpplus.select.select = self.orig_select
-        httpplus.socketutil.wrap_socket = self.orig_sslwrap
+        ssl.wrap_socket = self.orig_sslwrap
         socket.getaddrinfo = self.orig_getaddrinfo
 
     def assertStringEqual(self, l, r):
