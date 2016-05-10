@@ -59,9 +59,9 @@ class SimpleHttpTest(util.HttpTestBase, unittest.TestCase):
     def test_no_keepalive_http_1_0(self):
         expected_request_one = """GET /remote/.hg/requires HTTP/1.1
 Host: localhost:9999
-range: bytes=0-
-accept-encoding: identity
 accept: application/mercurial-0.1
+accept-encoding: identity
+range: bytes=0-
 user-agent: mercurial/proto-1.0
 
 """.replace('\n', '\r\n')
@@ -313,9 +313,9 @@ dotencode
         con._connect({})
         sock = con.sock
         sock.data = ['HTTP/1.1 403 Forbidden\r\n',
+                         'Content-Length: 18\r\n',
                          'Server: BogusServer 1.0\r\n',
-                         'Content-Length: 18',
-                         '\r\n\r\n'
+                         '\r\n'
                          "You can't do that."]
         expected_req = self.doPost(con, expect_body=False)
         self.assertEqual(('1.2.3.4', 80), sock.sa)
