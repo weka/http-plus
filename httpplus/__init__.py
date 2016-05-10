@@ -47,6 +47,7 @@ import inspect
 import logging
 import select
 import socket
+import ssl
 
 try:
     import cStringIO as io
@@ -215,7 +216,7 @@ class HTTPResponse(object):
                 raise HTTPTimeoutException('timeout reading data')
         try:
             data = self.sock.recv(INCOMING_BUFFER_SIZE)
-        except socket.sslerror as e:
+        except ssl.SSLError as e:
             if e.args[0] != socket.SSL_ERROR_WANT_READ:
                 raise
             logger.debug('SSL_ERROR_WANT_READ in _select, should retry later')
@@ -700,7 +701,7 @@ class HTTPConnection(object):
                 try:
                     try:
                         data = r[0].recv(INCOMING_BUFFER_SIZE)
-                    except socket.sslerror as e:
+                    except ssl.SSLError as e:
                         if e.args[0] != socket.SSL_ERROR_WANT_READ:
                             raise
                         logger.debug('SSL_ERROR_WANT_READ while sending '
