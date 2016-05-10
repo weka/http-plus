@@ -102,7 +102,7 @@ else:
             while True:
                 try:
                     return self._ssl.read(buflen)
-                except socket.sslerror as x:
+                except ssl.SSLError as x:
                     if x.args[0] == socket.SSL_ERROR_WANT_READ:
                         continue
                     else:

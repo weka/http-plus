@@ -32,6 +32,7 @@ from __future__ import absolute_import, print_function
 
 import difflib
 import socket
+import ssl
 
 import httpplus
 
@@ -132,7 +133,7 @@ class MockSSLSocket(object): # pylint: disable=too-few-public-methods
     def recv(self, amt=-1):
         try:
             if self._fail_recv:
-                raise socket.sslerror(socket.SSL_ERROR_WANT_READ)
+                raise ssl.SSLError(socket.SSL_ERROR_WANT_READ)
             return self._sock.recv(amt=amt)
         finally:
             self._fail_recv = not self._fail_recv
