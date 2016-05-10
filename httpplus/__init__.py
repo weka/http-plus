@@ -492,8 +492,8 @@ class HTTPConnection(object):
         if self._proxy_host is not None:
             logger.info('Connecting to http proxy %s:%s',
                         self._proxy_host, self._proxy_port)
-            sock = socketutil.create_connection((self._proxy_host,
-                                                 self._proxy_port))
+            sock = socket.create_connection((self._proxy_host,
+                                             self._proxy_port))
             if self.ssl:
                 data = self._buildheaders('CONNECT', '%s:%d' % (self.host,
                                                                 self.port),
@@ -525,7 +525,7 @@ class HTTPConnection(object):
                 logger.info('CONNECT (for SSL) to %s:%s via proxy succeeded.',
                             self.host, self.port)
         else:
-            sock = socketutil.create_connection((self.host, self.port))
+            sock = socket.create_connection((self.host, self.port))
         if self.ssl:
             # This is the default, but in the case of proxied SSL
             # requests the proxy logic above will have cleared
