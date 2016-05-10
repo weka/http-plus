@@ -36,6 +36,7 @@ from __future__ import absolute_import
 
 import logging
 import socket
+import ssl
 
 logger = logging.getLogger(__name__)
 
@@ -103,7 +104,7 @@ else:
                 try:
                     return self._ssl.read(buflen)
                 except ssl.SSLError as x:
-                    if x.args[0] == socket.SSL_ERROR_WANT_READ:
+                    if x.args[0] == ssl.SSL_ERROR_WANT_READ:
                         continue
                     else:
                         raise x

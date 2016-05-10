@@ -133,7 +133,7 @@ class MockSSLSocket(object): # pylint: disable=too-few-public-methods
     def recv(self, amt=-1):
         try:
             if self._fail_recv:
-                raise ssl.SSLError(socket.SSL_ERROR_WANT_READ)
+                raise ssl.SSLError(ssl.SSL_ERROR_WANT_READ)
             return self._sock.recv(amt=amt)
         finally:
             self._fail_recv = not self._fail_recv
