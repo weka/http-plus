@@ -28,8 +28,7 @@
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 """Abstraction to simplify socket use for Python < 2.6
 
-This will attempt to use the ssl module and the new
-socket.create_connection method, but fall back to the old
+This will attempt to use the ssl module but fall back to the old
 methods if those are unavailable.
 """
 from __future__ import absolute_import
@@ -50,33 +49,6 @@ except ImportError:
     import urllib2
     have_ssl = getattr(urllib2, 'HTTPSHandler', False)
     ssl = False
-
-
-try:
-    create_connection = socket.create_connection
-except AttributeError:
-    def create_connection(address):
-        """Backport of socket.create_connection from Python 2.6."""
-        host, port = address
-        msg = "getaddrinfo returns an empty list"
-        sock = None
-        for res in socket.getaddrinfo(host, port, 0,
-                                      socket.SOCK_STREAM):
-            af, socktype, proto, unused_canonname, sa = res
-            try:
-                sock = socket.socket(af, socktype, proto)
-                logger.info("connect: (%s, %s)", host, port)
-                sock.connect(sa)
-            except socket.error as msg:
-                logger.info('connect fail: %s %s', host, port)
-                if sock:
-                    sock.close()
-                sock = None
-                continue
-            break
-        if not sock:
-            raise socket.error(msg)
-        return sock
 
 if ssl:
     wrap_socket = ssl.wrap_socket
