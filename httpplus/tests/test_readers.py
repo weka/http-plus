@@ -34,6 +34,12 @@ import unittest
 
 from httpplus import _readers
 
+try:
+    xrange
+except NameError:
+    # Forward for Python 3
+    xrange = range
+
 def chunkedblock(x, eol='\r\n'):
     r"""Make a chunked transfer-encoding block.
 
