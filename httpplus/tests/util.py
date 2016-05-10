@@ -201,10 +201,11 @@ class HttpTestBase(object):
         con.request('POST', '/', body=body_to_send,
                     expect_continue=True)
         expected_req = ('POST / HTTP/1.1\r\n'
-                        'Host: 1.2.3.4\r\n'
-                        'content-length: %d\r\n'
                         'Expect: 100-Continue\r\n'
-                        'accept-encoding: identity\r\n\r\n' %
+                        'Host: 1.2.3.4\r\n'
+                        'accept-encoding: identity\r\n'
+                        'content-length: %d\r\n'
+                        '\r\n' %
                         len(body_to_send))
         if expect_body:
             expected_req += body_to_send

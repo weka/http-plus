@@ -561,7 +561,7 @@ class HTTPConnection(object):
         outgoing = ['%s %s %s%s' % (method, path, http_ver, EOL)]
         headers['host'] = ('Host', hdrhost)
         headers[HDR_ACCEPT_ENCODING] = (HDR_ACCEPT_ENCODING, 'identity')
-        for hdr, val in headers.values():
+        for hdr, val in sorted(headers.values()):
             outgoing.append('%s: %s%s' % (hdr, val, EOL))
         outgoing.append(EOL)
         return ''.join(outgoing)

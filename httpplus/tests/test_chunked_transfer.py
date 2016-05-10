@@ -73,9 +73,10 @@ class ChunkedTransferTest(util.HttpTestBase, unittest.TestCase):
         con.request('POST', '/', body=io.StringIO(
             (zz * (0x8010 / 3)) + 'end-of-body'))
         expected_req = ('POST / HTTP/1.1\r\n'
-                        'transfer-encoding: chunked\r\n'
                         'Host: 1.2.3.4\r\n'
-                        'accept-encoding: identity\r\n\r\n')
+                        'accept-encoding: identity\r\n'
+                        'transfer-encoding: chunked\r\n'
+                        '\r\n')
         expected_req += chunkedblock('zz\n' * (0x8000 / 3) + 'zz')
         expected_req += chunkedblock(
             '\n' + 'zz\n' * ((0x1b - len('end-of-body')) / 3) + 'end-of-body')
