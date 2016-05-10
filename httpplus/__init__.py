@@ -336,7 +336,7 @@ def _foldheaders(headers):
     >>> _foldheaders({'Accept-Encoding': 'wat'})
     {'accept-encoding': ('Accept-Encoding', 'wat')}
     """
-    return dict((k.lower(), (k, v)) for k, v in headers.iteritems())
+    return dict((k.lower(), (k, v)) for k, v in headers.items())
 
 try:
     inspect.signature
@@ -561,7 +561,7 @@ class HTTPConnection(object):
         outgoing = ['%s %s %s%s' % (method, path, http_ver, EOL)]
         headers['host'] = ('Host', hdrhost)
         headers[HDR_ACCEPT_ENCODING] = (HDR_ACCEPT_ENCODING, 'identity')
-        for hdr, val in headers.itervalues():
+        for hdr, val in headers.values():
             outgoing.append('%s: %s%s' % (hdr, val, EOL))
         outgoing.append(EOL)
         return ''.join(outgoing)
