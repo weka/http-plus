@@ -4,8 +4,8 @@ import re
 import subprocess
 import sys
 import time
-if not hasattr(sys, 'version_info') or sys.version_info < (2, 4, 0, 'final'):
-    raise SystemExit("httpplus requires python 2.4 or later.")
+if not hasattr(sys, 'version_info') or sys.version_info < (2, 6, 0, 'final'):
+    raise SystemExit("httpplus requires python 2.6 or later.")
 
 try:
     from setuptools import setup
