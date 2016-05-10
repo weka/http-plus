@@ -217,7 +217,7 @@ class HTTPResponse(object):
         try:
             data = self.sock.recv(INCOMING_BUFFER_SIZE)
         except ssl.SSLError as e:
-            if e.args[0] != socket.SSL_ERROR_WANT_READ:
+            if e.args[0] != ssl.SSL_ERROR_WANT_READ:
                 raise
             logger.debug('SSL_ERROR_WANT_READ in _select, should retry later')
             return True
@@ -702,7 +702,7 @@ class HTTPConnection(object):
                     try:
                         data = r[0].recv(INCOMING_BUFFER_SIZE)
                     except ssl.SSLError as e:
-                        if e.args[0] != socket.SSL_ERROR_WANT_READ:
+                        if e.args[0] != ssl.SSL_ERROR_WANT_READ:
                             raise
                         logger.debug('SSL_ERROR_WANT_READ while sending '
                                      'data, retrying...')
@@ -780,7 +780,7 @@ class HTTPConnection(object):
                             out = data
                     amt = w[0].send(out)
                 except socket.error as e:
-                    if e[0] == socket.SSL_ERROR_WANT_WRITE and self.ssl:
+                    if e[0] == ssl.SSL_ERROR_WANT_WRITE and self.ssl:
                         # This means that SSL hasn't flushed its buffer into
                         # the socket yet.
                         # TODO: find a way to block on ssl flushing its buffer
