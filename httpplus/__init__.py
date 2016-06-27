@@ -93,6 +93,20 @@ _END_HEADERS = EOL * 2
 TIMEOUT_ASSUME_CONTINUE = 1
 TIMEOUT_DEFAULT = None
 
+def _ensurebytes(data):
+    if not isinstance(data, bytes):
+        try:
+            return data.encode('latin-1')
+        except UnicodeEncodeError as err:
+            raise UnicodeEncodeError(
+                err.encoding,
+                err.object,
+                err.start,
+                err.end,
+                '%r is not valid Latin-1 Use .encode("utf-8") '
+                'if sending as utf-8 is desired.' % (
+                    data[err.start:err.end],))
+    return data
 
 class _CompatMessage(email.message.Message):
     """Workaround for rfc822.Message and email.message.Message API diffs."""
@@ -426,8 +440,9 @@ class HTTPConnection(object):
         Any extra keyword arguments to this function will be provided
         to the ssl_wrap_socket method. If no ssl
         """
-        if port is None and host.count(':') == 1 or ']:' in host:
-            host, port = host.rsplit(':', 1)
+        host = _ensurebytes(host)
+        if port is None and host.count(b':') == 1 or b']:' in host:
+            host, port = host.rsplit(b':', 1)
             port = int(port)
             if '[' in host:
                 host = host[1:-1]
@@ -563,8 +578,9 @@ class HTTPConnection(object):
         outgoing = ['%s %s %s%s' % (method, path, http_ver, EOL)]
         headers['host'] = ('Host', hdrhost)
         headers[HDR_ACCEPT_ENCODING] = (HDR_ACCEPT_ENCODING, 'identity')
-        for hdr, val in sorted(headers.values()):
-            outgoing.append('%s: %s%s' % (hdr, val, EOL))
+        for hdr, val in sorted((_ensurebytes(h), _ensurebytes(v))
+                               for h, v in headers.values()):
+            outgoing.append(b'%s: %s%s' % (hdr, val, EOL))
         outgoing.append(EOL)
         return ''.join(outgoing)
 
@@ -619,6 +635,8 @@ class HTTPConnection(object):
         available. Use the `getresponse()` method to retrieve the
         response.
         """
+        method = _ensurebytes(method)
+        path = _ensurebytes(path)
         if self.busy():
             raise httplib.CannotSendRequest(
                 'Can not send another request before '
@@ -634,7 +652,7 @@ class HTTPConnection(object):
         chunked = False
         if body and HDR_CONTENT_LENGTH not in hdrs:
             if getattr(body, '__len__', False):
-                hdrs[HDR_CONTENT_LENGTH] = (HDR_CONTENT_LENGTH, len(body))
+                hdrs[HDR_CONTENT_LENGTH] = (HDR_CONTENT_LENGTH, str(len(body)))
             elif getattr(body, 'read', False):
                 hdrs[HDR_XFER_ENCODING] = (HDR_XFER_ENCODING,
                                            XFER_ENCODING_CHUNKED)
