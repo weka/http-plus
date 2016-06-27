@@ -70,8 +70,8 @@ logger = logging.getLogger(__name__)
 
 __all__ = ['HTTPConnection', 'HTTPResponse']
 
-HTTP_VER_1_0 = 'HTTP/1.0'
-HTTP_VER_1_1 = 'HTTP/1.1'
+HTTP_VER_1_0 = b'HTTP/1.0'
+HTTP_VER_1_1 = b'HTTP/1.1'
 
 OUTGOING_BUFFER_SIZE = 1 << 15
 INCOMING_BUFFER_SIZE = 1 << 20
@@ -85,7 +85,7 @@ XFER_ENCODING_CHUNKED = 'chunked'
 
 CONNECTION_CLOSE = 'close'
 
-EOL = '\r\n'
+EOL = b'\r\n'
 _END_HEADERS = EOL * 2
 
 # Based on some searching around, 1 second seems like a reasonable
@@ -147,11 +147,11 @@ class HTTPResponse(object):
     def __init__(self, sock, timeout, method):
         self.sock = sock
         self.method = method
-        self.raw_response = ''
+        self.raw_response = b''
         self._headers_len = 0
         self.headers = None
         self.will_close = False
-        self.status_line = ''
+        self.status_line = b''
         self.status = None
         self.continued = False
         self.http_version = None
@@ -201,14 +201,14 @@ class HTTPResponse(object):
         """
         blocks = []
         while True:
-            self._reader.readto('\n', blocks)
+            self._reader.readto(b'\n', blocks)
 
-            if blocks and blocks[-1][-1] == '\n' or self.complete():
+            if blocks and blocks[-1][-1:] == b'\n' or self.complete():
                 break
 
             self._select()
 
-        return ''.join(blocks)
+        return b''.join(blocks)
 
     def read(self, length=None):
         """Read data from the response body."""
@@ -263,7 +263,7 @@ class HTTPResponse(object):
         self.raw_response += data
         # This is a bogus server with bad line endings
         if self._eol not in self.raw_response:
-            for bad_eol in ('\n', '\r'):
+            for bad_eol in (b'\n', b'\r'):
                 if (bad_eol in self.raw_response
                     # verify that bad_eol is not the end of the incoming data
                     # as this could be a response line that just got
@@ -280,8 +280,8 @@ class HTTPResponse(object):
 
         # handle 100-continue response
         hdrs, body = self.raw_response.split(self._end_headers, 1)
-        unused_http_ver, status = hdrs.split(' ', 1)
-        if status.startswith('100'):
+        unused_http_ver, status = hdrs.split(b' ', 1)
+        if status.startswith(b'100'):
             self.raw_response = body
             self.continued = True
             logger.debug('continue seen, setting body to %r', body)
@@ -295,13 +295,13 @@ class HTTPResponse(object):
             self.status_line, hdrs = hdrs.split(self._eol, 1)
         else:
             self.status_line = hdrs
-            hdrs = ''
+            hdrs = b''
         # TODO HTTP < 1.0 support
         (self.http_version, self.status,
-         self.reason) = self.status_line.split(' ', 2)
+         self.reason) = self.status_line.split(b' ', 2)
         self.status = int(self.status)
         if self._eol != EOL:
-            hdrs = hdrs.replace(self._eol, '\r\n')
+            hdrs = hdrs.replace(self._eol, b'\r\n')
         headers = _CompatMessage.from_string(hdrs)
         content_len = None
         if HDR_CONTENT_LENGTH in headers:
@@ -319,8 +319,8 @@ class HTTPResponse(object):
             # HEAD responses are forbidden from returning a body, and
             # it's implausible for a CONNECT response to use
             # close-is-end logic for an OK response.
-            if (self.method == 'HEAD' or
-                (self.method == 'CONNECT' and content_len is None)):
+            if (self.method == b'HEAD' or
+                (self.method == b'CONNECT' and content_len is None)):
                 content_len = 0
             if content_len is not None:
                 logger.debug('using a content-length reader with length %d',
@@ -444,7 +444,7 @@ class HTTPConnection(object):
         if port is None and host.count(b':') == 1 or b']:' in host:
             host, port = host.rsplit(b':', 1)
             port = int(port)
-            if '[' in host:
+            if b'[' in host:
                 host = host[1:-1]
         if ssl_wrap_socket is not None:
             _wrap_socket = ssl_wrap_socket
@@ -512,12 +512,12 @@ class HTTPConnection(object):
             sock = socket.create_connection((self._proxy_host,
                                              self._proxy_port))
             if self.ssl:
-                data = self._buildheaders('CONNECT', '%s:%d' % (self.host,
-                                                                self.port),
+                data = self._buildheaders(b'CONNECT', b'%s:%d' % (self.host,
+                                                                  self.port),
                                           proxy_headers, HTTP_VER_1_0)
                 sock.send(data)
                 sock.setblocking(0)
-                r = self.response_class(sock, self.timeout, 'CONNECT')
+                r = self.response_class(sock, self.timeout, b'CONNECT')
                 timeout_exc = HTTPTimeoutException(
                     'Timed out waiting for CONNECT response from proxy')
                 while not r.complete():
@@ -563,26 +563,26 @@ class HTTPConnection(object):
             hdrhost = self.host
         else:
             # include nonstandard port in header
-            if ':' in self.host:  # must be IPv6
-                hdrhost = '[%s]:%d' % (self.host, self.port)
+            if b':' in self.host:  # must be IPv6
+                hdrhost = b'[%s]:%d' % (self.host, self.port)
             else:
-                hdrhost = '%s:%d' % (self.host, self.port)
+                hdrhost = b'%s:%d' % (self.host, self.port)
         if self._proxy_host and not self.ssl:
             # When talking to a regular http proxy we must send the
             # full URI, but in all other cases we must not (although
             # technically RFC 2616 says servers must accept our
             # request if we screw up, experimentally few do that
             # correctly.)
-            assert path[0] == '/', 'path must start with a /'
-            path = 'http://%s%s' % (hdrhost, path)
-        outgoing = ['%s %s %s%s' % (method, path, http_ver, EOL)]
-        headers['host'] = ('Host', hdrhost)
+            assert path[0:1] == b'/', 'path must start with a /'
+            path = b'http://%s%s' % (hdrhost, path)
+        outgoing = [b'%s %s %s%s' % (method, path, http_ver, EOL)]
+        headers[b'host'] = (b'Host', hdrhost)
         headers[HDR_ACCEPT_ENCODING] = (HDR_ACCEPT_ENCODING, 'identity')
         for hdr, val in sorted((_ensurebytes(h), _ensurebytes(v))
                                for h, v in headers.values()):
             outgoing.append(b'%s: %s%s' % (hdr, val, EOL))
         outgoing.append(EOL)
-        return ''.join(outgoing)
+        return b''.join(outgoing)
 
     def close(self):
         """Close the connection to the server.
@@ -652,7 +652,8 @@ class HTTPConnection(object):
         chunked = False
         if body and HDR_CONTENT_LENGTH not in hdrs:
             if getattr(body, '__len__', False):
-                hdrs[HDR_CONTENT_LENGTH] = (HDR_CONTENT_LENGTH, str(len(body)))
+                hdrs[HDR_CONTENT_LENGTH] = (HDR_CONTENT_LENGTH,
+                                            b'%d' % len(body))
             elif getattr(body, 'read', False):
                 hdrs[HDR_XFER_ENCODING] = (HDR_XFER_ENCODING,
                                            XFER_ENCODING_CHUNKED)
@@ -660,10 +661,10 @@ class HTTPConnection(object):
             else:
                 raise BadRequestData('body has no __len__() nor read()')
         # Figure out expect-continue header
-        if hdrs.get('expect', ('', ''))[1].lower() == '100-continue':
+        if hdrs.get('expect', ('', ''))[1].lower() == b'100-continue':
             expect_continue = True
         elif expect_continue:
-            hdrs['expect'] = ('Expect', '100-Continue')
+            hdrs['expect'] = (b'Expect', b'100-Continue')
         # httplib compatibility: if the user specified a
         # proxy-authorization header, that's actually intended for a
         # proxy CONNECT action, not the real request, but only if
@@ -791,11 +792,15 @@ class HTTPConnection(object):
                             continue
                         if len(data) < OUTGOING_BUFFER_SIZE:
                             if chunked:
-                                body = '0' + EOL + EOL
+                                body = b'0' + EOL + EOL
                             else:
                                 body = None
                         if chunked:
-                            out = hex(len(data))[2:] + EOL + data + EOL
+                            # This encode is okay because we know
+                            # hex() is building us only 0-9 and a-f
+                            # digits.
+                            asciilen = hex(len(data))[2:].encode('ascii')
+                            out = asciilen + EOL + data + EOL
                         else:
                             out = data
                     amt = w[0].send(out)
