@@ -42,6 +42,7 @@ class TestHttplib(unittest.TestCase):
         cls._server = simple_server.make_server('localhost', 0, _application)
         cls._port = cls._server.socket.getsockname()[1]
         t = threading.Thread(target=cls._server.serve_forever)
+        t.daemon = True
         t.start()
 
     @classmethod
