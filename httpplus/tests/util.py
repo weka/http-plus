@@ -61,7 +61,7 @@ class MockSocket(object):
         self.data = []
         self.remote_closed = self.closed = False
         self.close_on_empty = False
-        self.sent = ''
+        self.sent = b''
         self.read_wait_sentinel = httpplus._END_HEADERS
         self.blocking = True
 
@@ -80,7 +80,7 @@ class MockSocket(object):
         if self.early_data:
             datalist = self.early_data
         elif not self.data:
-            return ''
+            return b''
         else:
             datalist = self.data
         if amt == -1:
@@ -154,10 +154,12 @@ def mocksslwrap(sock, keyfile=None, certfile=None,
 
 
 def mockgetaddrinfo(host, port, unused, streamtype):
+    if not isinstance(host, bytes):
+        host = host.encode('ascii')
     assert unused == 0
     assert streamtype == socket.SOCK_STREAM
-    if host.count('.') != 3:
-        host = '127.0.0.42'
+    if host.count(b'.') != 3:
+        host = b'127.0.0.42'
     return [(socket.AF_INET, socket.SOCK_STREAM, socket.IPPROTO_TCP, '',
              (host, port))]
 
@@ -203,15 +205,15 @@ class HttpTestBase(object):
                 fromfile='expected', tofile='got')))
             raise
 
-    def doPost(self, con, expect_body, body_to_send='This is some POST data'):
+    def doPost(self, con, expect_body, body_to_send=b'This is some POST data'):
         con.request('POST', '/', body=body_to_send,
                     expect_continue=True)
-        expected_req = ('POST / HTTP/1.1\r\n'
-                        'Expect: 100-Continue\r\n'
-                        'Host: 1.2.3.4\r\n'
-                        'accept-encoding: identity\r\n'
-                        'content-length: %d\r\n'
-                        '\r\n' %
+        expected_req = (b'POST / HTTP/1.1\r\n'
+                        b'Expect: 100-Continue\r\n'
+                        b'Host: 1.2.3.4\r\n'
+                        b'accept-encoding: identity\r\n'
+                        b'content-length: %d\r\n'
+                        b'\r\n' %
                         len(body_to_send))
         if expect_body:
             expected_req += body_to_send

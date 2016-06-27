@@ -24,7 +24,7 @@ def _application(environ, start_response):
                               ('TwoLines', 'This header\r\n\thas two lines.'),
                               ('TwoLines2', 'Also\r\n  has two lines.'),
                           ])
-    return ['some response bytes']
+    return [b'some response bytes']
 
 
 def _skip_unstable_headers(headers):
@@ -76,8 +76,8 @@ class TestHttplib(unittest.TestCase):
             ]
         self.assertEqual(expect,
                          sorted(_skip_unstable_headers(r.getheaders())))
-        self.assertEqual('some', r.read(4))
-        self.assertEqual(' response bytes', r.read())
+        self.assertEqual(b'some', r.read(4))
+        self.assertEqual(b' response bytes', r.read())
 
 
 class TestHttpplus(TestHttplib):

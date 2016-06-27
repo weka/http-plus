@@ -36,11 +36,11 @@ import unittest
 
 import httpplus
 
-_RESPONSE = """HTTP/1.1 200 OK
+_RESPONSE = b"""HTTP/1.1 200 OK
 Server: wat
 Content-Length: 2
 
-hi""".replace("\n", "\r\n")
+hi""".replace(b"\n", b"\r\n")
 
 
 class SlowCloseServer(object):
@@ -52,17 +52,17 @@ class SlowCloseServer(object):
         self._socket = s
 
     def loop(self):
-        reqdata = ''
-        while '/quit' not in reqdata:
+        reqdata = b''
+        while b'/quit' not in reqdata:
             con, unused_addr = self._socket.accept()
-            reqdata = ''
-            while '\r\n\r\n' not in reqdata:
+            reqdata = b''
+            while b'\r\n\r\n' not in reqdata:
                 reqdata += con.recv(1)
             con.send(_RESPONSE)
-            if '/quit' in reqdata:
+            if b'/quit' in reqdata:
                 break
-            reqdata2 = ''
-            while '\r\n\r\n' not in reqdata2:
+            reqdata2 = b''
+            while b'\r\n\r\n' not in reqdata2:
                 reqdata2 += con.recv(1)
             con.close()
 
@@ -84,13 +84,13 @@ class SlowCloseTest(unittest.TestCase):
         # with the same client.
         con.request('GET', '/')
         resp = con.getresponse()
-        self.assertEqual(resp.read(), "hi")
+        self.assertEqual(resp.read(), b"hi")
         con.request('GET', '/ohai')
         resp = con.getresponse()
-        self.assertEqual(resp.read(), "hi")
+        self.assertEqual(resp.read(), b"hi")
         con.request('GET', '/wat')
         resp = con.getresponse()
-        self.assertEqual(resp.read(), "hi")
+        self.assertEqual(resp.read(), b"hi")
         con.request('GET', '/quit')
         resp = con.getresponse()
-        self.assertEqual(resp.read(), "hi")
+        self.assertEqual(resp.read(), b"hi")
