@@ -71,6 +71,7 @@ class SlowCloseTest(unittest.TestCase):
     def setUp(self):
         self.server = SlowCloseServer()
         t = threading.Thread(target=self.server.loop)
+        t.daemon = True
         t.start()
 
     def test_request_response_request_close(self):
