@@ -28,7 +28,7 @@
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #
 # pylint: disable=protected-access,missing-docstring,too-few-public-methods,invalid-name,too-many-public-methods
-from __future__ import absolute_import
+from __future__ import absolute_import, division
 
 import unittest
 
@@ -71,15 +71,15 @@ class ChunkedTransferTest(util.HttpTestBase, unittest.TestCase):
 
         zz = 'zz\n'
         con.request('POST', '/', body=io.StringIO(
-            (zz * (0x8010 / 3)) + 'end-of-body'))
+            (zz * (0x8010 // 3)) + 'end-of-body'))
         expected_req = ('POST / HTTP/1.1\r\n'
                         'Host: 1.2.3.4\r\n'
                         'accept-encoding: identity\r\n'
                         'transfer-encoding: chunked\r\n'
                         '\r\n')
-        expected_req += chunkedblock('zz\n' * (0x8000 / 3) + 'zz')
+        expected_req += chunkedblock('zz\n' * (0x8000 // 3) + 'zz')
         expected_req += chunkedblock(
-            '\n' + 'zz\n' * ((0x1b - len('end-of-body')) / 3) + 'end-of-body')
+            '\n' + 'zz\n' * ((0x1b - len('end-of-body')) // 3) + 'end-of-body')
         expected_req += '0\r\n\r\n'
         self.assertEqual(('1.2.3.4', 80), sock.sa)
         self.assertStringEqual(expected_req, sock.sent)
