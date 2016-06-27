@@ -96,24 +96,19 @@ TIMEOUT_DEFAULT = None
 class _CompatMessage(email.message.Message):
     """Workaround for rfc822.Message and email.message.Message API diffs."""
 
-    def _reprocess_headers(self):
-        """Rewrite header values to match httplib behavior.
-
-        httplib.HTTPMessage and email.message.Message handle
-        continuations in very different ways. httplib.HTTPMessage
-        always produces a newline and a space, so we reprocess the
-        results from email.message.Message to match what we expect.
-
-        TODO: figure out a better solution than this.
-
-        """
+    @classmethod
+    def from_string(cls, s):
+        headers = email.message_from_string(s, _class=_CompatMessage)
+        # Fix multi-line headers to match httplib's behavior from
+        # Python 2.x, since email.message.Message handles them in
+        # slightly different ways.
         new = []
-        for h, v in self._headers:
+        for h, v in headers._headers:
             if '\r\n' in v:
                 v = '\n'.join([' ' + x.lstrip() for x in v.split('\r\n')])[1:]
             new.append((h, v))
-        self._headers = new
-
+        headers._headers = new
+        return headers
 
     def getheaders(self, key):
         return self.get_all(key)
@@ -282,8 +277,7 @@ class HTTPResponse(object):
         self.status = int(self.status)
         if self._eol != EOL:
             hdrs = hdrs.replace(self._eol, '\r\n')
-        headers = email.message_from_string(hdrs, _class=_CompatMessage)
-        headers._reprocess_headers()
+        headers = _CompatMessage.from_string(hdrs)
         content_len = None
         if HDR_CONTENT_LENGTH in headers:
             content_len = int(headers[HDR_CONTENT_LENGTH])
