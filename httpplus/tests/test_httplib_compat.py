@@ -2,6 +2,7 @@
 from __future__ import absolute_import
 
 import socket
+import sys
 import threading
 import unittest
 
@@ -28,7 +29,9 @@ def _application(environ, start_response):
 
 def _skip_unstable_headers(headers):
     for header, value in headers:
-        if header in ('date', 'server'):
+        # At some point between Python 2.7 and 3.5 httplib (aka
+        # http.client) stopped lowercasing all headers. Awesome.
+        if header.lower() in ('date', 'server'):
             continue
         yield header, value
 
@@ -55,12 +58,22 @@ class TestHttplib(unittest.TestCase):
         r = c.getresponse()
         self.assertEqual('This header has one line.', r.getheader('OneLine'))
         self.assertEqual(None, r.getheader('This Header Does Not Exist'))
-        expect = [
-            ('content-length', '19'),
-            ('oneline', 'This header has one line.'),
-            ('twolines', 'This header\n has two lines.'),
-            ('twolines2', 'Also\n has two lines.'),
-        ]
+        if sys.version_info < (3, 0):
+            expect = [
+                ('content-length', '19'),
+                ('oneline', 'This header has one line.'),
+                ('twolines', 'This header\n has two lines.'),
+                ('twolines2', 'Also\n has two lines.'),
+            ]
+        else:
+            # Python 3 dramatically changes httplib's behavior for
+            # header handling.
+            expect = [
+                ('Content-Length', '19'),
+                ('OneLine', 'This header has one line.'),
+                ('TwoLines', 'This header\r\n\thas two lines.'),
+                ('TwoLines2', 'Also\r\n  has two lines.'),
+            ]
         self.assertEqual(expect,
                          sorted(_skip_unstable_headers(r.getheaders())))
         self.assertEqual('some', r.read(4))

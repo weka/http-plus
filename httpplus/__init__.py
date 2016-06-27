@@ -99,7 +99,7 @@ class _CompatMessage(email.message.Message):
 
     @classmethod
     def from_string(cls, s):
-        if sys.version_info > (3,0):
+        if sys.version_info > (3, 0):
             # Python 3 can't decode headers from bytes, so we have to
             # trust RFC 2616 and decode the headers as iso-8859-1
             # bytes.
@@ -108,12 +108,13 @@ class _CompatMessage(email.message.Message):
         # Fix multi-line headers to match httplib's behavior from
         # Python 2.x, since email.message.Message handles them in
         # slightly different ways.
-        new = []
-        for h, v in headers._headers:
-            if '\r\n' in v:
-                v = '\n'.join([' ' + x.lstrip() for x in v.split('\r\n')])[1:]
-            new.append((h, v))
-        headers._headers = new
+        if sys.version_info < (3, 0):
+            new = []
+            for h, v in headers._headers:
+                if '\r\n' in v:
+                    v = '\n'.join([' ' + x.lstrip() for x in v.split('\r\n')])[1:]
+                new.append((h, v))
+            headers._headers = new
         return headers
 
     def getheaders(self, key):
@@ -172,7 +173,11 @@ class HTTPResponse(object):
         return self.headers.getheader(header, default=default)
 
     def getheaders(self):
-        return [(k.lower(), v) for k, v in self.headers.items()]
+        if sys.version_info < (3, 0):
+            return [(k.lower(), v) for k, v in self.headers.items()]
+        # Starting in Python 3, headers aren't lowercased before being
+        # returned here.
+        return self.headers.items()
 
     def readline(self):
         """Read a single line from the response body.

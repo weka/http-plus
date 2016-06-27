@@ -31,6 +31,7 @@
 from __future__ import absolute_import
 
 import socket
+import sys
 import unittest
 
 import httpplus
@@ -120,8 +121,12 @@ dotencode
         self.assertEqual(expected_req, con.sock.sent)
         resp = con.getresponse()
         self.assertEqual('1234567890', resp.read())
-        self.assertEqual(['Value\n Rest of value'],
-                         resp.headers.getheaders('multiline'))
+        if sys.version_info < (3, 0):
+            self.assertEqual(['Value\n Rest of value'],
+                             resp.headers.getheaders('multiline'))
+        else:
+            self.assertEqual(['Value\r\n  Rest of value'],
+                             resp.headers.getheaders('multiline'))
         # Socket should not be closed
         self.assertEqual(resp.sock.closed, False)
         self.assertEqual(con.sock.closed, False)
