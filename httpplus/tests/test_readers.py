@@ -40,37 +40,39 @@ except NameError:
     # Forward for Python 3
     xrange = range
 
-def chunkedblock(x, eol='\r\n'):
+def chunkedblock(x, eol=b'\r\n'):
     r"""Make a chunked transfer-encoding block.
 
-    >>> chunkedblock('hi')
-    '2\r\nhi\r\n'
-    >>> chunkedblock('hi' * 10)
-    '14\r\nhihihihihihihihihihi\r\n'
-    >>> chunkedblock('hi', eol='\n')
-    '2\nhi\n'
+    >>> chunkedblock(b'hi')
+    b'2\r\nhi\r\n'
+    >>> chunkedblock(b'hi' * 10)
+    b'14\r\nhihihihihihihihihihi\r\n'
+    >>> chunkedblock(b'hi', eol=b'\n')
+    b'2\nhi\n'
     """
-    return ''.join((hex(len(x))[2:], eol, x, eol))
+    return b''.join((hex(len(x))[2:].encode('ascii'), eol, x, eol))
 
-corpus = 'foo\r\nbar\r\nbaz\r\n'
+corpus = b'foo\r\nbar\r\nbaz\r\n'
 
 
 class ChunkedReaderTest(unittest.TestCase):
     def test_many_block_boundaries(self):
         for step in xrange(1, len(corpus)):
-            data = ''.join(chunkedblock(corpus[start:start+step]) for
-                           start in xrange(0, len(corpus), step))
+            data = b''.join(chunkedblock(corpus[start:start+step]) for
+                            start in xrange(0, len(corpus), step))
             for istep in xrange(1, len(data)):
-                rdr = _readers.ChunkedReader('\r\n')
+                rdr = _readers.ChunkedReader(b'\r\n')
                 print('step', step, 'load', istep)
                 for start in xrange(0, len(data), istep):
                     rdr._load(data[start:start+istep])
-                rdr._load(chunkedblock(''))
+                rdr._load(chunkedblock(b''))
                 self.assertEqual(corpus, rdr.read(len(corpus) + 1))
 
     def test_small_chunk_blocks_large_wire_blocks(self):
-        data = ''.join(map(chunkedblock, corpus)) + chunkedblock('')
-        rdr = _readers.ChunkedReader('\r\n')
+        data = b''.join(
+            [chunkedblock(c.encode('ascii')) for c in corpus.decode('ascii')]
+            + [chunkedblock(b'')])
+        rdr = _readers.ChunkedReader(b'\r\n')
         for start in xrange(0, len(data), 4):
             d = data[start:start + 4]
             if d:

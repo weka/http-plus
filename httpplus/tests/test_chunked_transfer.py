@@ -32,29 +32,27 @@ from __future__ import absolute_import, division
 
 import unittest
 
-try:
-    import cStringIO as io
-    io.StringIO
-except ImportError:
-    import io
+import io
 
 import httpplus
 
 # relative import to ease embedding the library
 from . import util
 
+def tricklebytes(b):
+    return [c.encode('ascii') for c in b.decode('ascii')]
 
-def chunkedblock(x, eol='\r\n'):
+def chunkedblock(x, eol=b'\r\n'):
     r"""Make a chunked transfer-encoding block.
 
-    >>> chunkedblock('hi')
-    '2\r\nhi\r\n'
-    >>> chunkedblock('hi' * 10)
-    '14\r\nhihihihihihihihihihi\r\n'
-    >>> chunkedblock('hi', eol='\n')
-    '2\nhi\n'
+    >>> chunkedblock(b'hi')
+    b'2\r\nhi\r\n'
+    >>> chunkedblock(b'hi' * 10)
+    b'14\r\nhihihihihihihihihihi\r\n'
+    >>> chunkedblock(b'hi', eol=b'\n')
+    b'2\nhi\n'
     """
-    return ''.join((hex(len(x))[2:], eol, x, eol))
+    return b''.join((hex(len(x))[2:].encode('ascii'), eol, x, eol))
 
 
 class ChunkedTransferTest(util.HttpTestBase, unittest.TestCase):
@@ -62,115 +60,117 @@ class ChunkedTransferTest(util.HttpTestBase, unittest.TestCase):
         con = httpplus.HTTPConnection('1.2.3.4:80')
         con._connect({})
         sock = con.sock
-        sock.read_wait_sentinel = '0\r\n\r\n'
-        sock.data = ['HTTP/1.1 200 OK\r\n',
-                     'Server: BogusServer 1.0\r\n',
-                     'Content-Length: 6',
-                     '\r\n\r\n',
-                     "Thanks"]
+        sock.read_wait_sentinel = b'0\r\n\r\n'
+        sock.data = [b'HTTP/1.1 200 OK\r\n',
+                     b'Server: BogusServer 1.0\r\n',
+                     b'Content-Length: 6',
+                     b'\r\n\r\n',
+                     b"Thanks"]
 
-        zz = 'zz\n'
-        con.request('POST', '/', body=io.StringIO(
-            (zz * (0x8010 // 3)) + 'end-of-body'))
-        expected_req = ('POST / HTTP/1.1\r\n'
-                        'Host: 1.2.3.4\r\n'
-                        'accept-encoding: identity\r\n'
-                        'transfer-encoding: chunked\r\n'
-                        '\r\n')
-        expected_req += chunkedblock('zz\n' * (0x8000 // 3) + 'zz')
+        zz = b'zz\n'
+        con.request('POST', '/', body=io.BytesIO(
+            (zz * (0x8010 // 3)) + b'end-of-body'))
+        expected_req = (b'POST / HTTP/1.1\r\n'
+                        b'Host: 1.2.3.4\r\n'
+                        b'accept-encoding: identity\r\n'
+                        b'transfer-encoding: chunked\r\n'
+                        b'\r\n')
+        expected_req += chunkedblock(b'zz\n' * (0x8000 // 3) + b'zz')
         expected_req += chunkedblock(
-            '\n' + 'zz\n' * ((0x1b - len('end-of-body')) // 3) + 'end-of-body')
-        expected_req += '0\r\n\r\n'
-        self.assertEqual(('1.2.3.4', 80), sock.sa)
+            b'\n' + b'zz\n' * ((0x1b - len('end-of-body')) // 3) + b'end-of-body')
+        expected_req += b'0\r\n\r\n'
+        self.assertEqual((b'1.2.3.4', 80), sock.sa)
         self.assertStringEqual(expected_req, sock.sent)
-        self.assertEqual("Thanks", con.getresponse().read())
+        self.assertEqual(b"Thanks", con.getresponse().read())
         self.assertEqual(sock.closed, False)
 
     def testChunkedDownload(self):
         con = httpplus.HTTPConnection('1.2.3.4:80')
         con._connect({})
         sock = con.sock
-        sock.data = ['HTTP/1.1 200 OK\r\n',
-                     'Server: BogusServer 1.0\r\n',
-                     'transfer-encoding: chunked',
-                     '\r\n\r\n',
-                     chunkedblock('hi '),
-                     ] + list(chunkedblock('there')) + [
-                     chunkedblock(''),
+        sock.data = [b'HTTP/1.1 200 OK\r\n',
+                     b'Server: BogusServer 1.0\r\n',
+                     b'transfer-encoding: chunked',
+                     b'\r\n\r\n',
+                     chunkedblock(b'hi '),
+                     ] + tricklebytes(chunkedblock(b'there')) + [
+                     chunkedblock(b''),
                      ]
         con.request('GET', '/')
-        self.assertStringEqual('hi there', con.getresponse().read())
+        self.assertStringEqual(b'hi there', con.getresponse().read())
 
     def testChunkedDownloadOddReadBoundaries(self):
         con = httpplus.HTTPConnection('1.2.3.4:80')
         con._connect({})
         sock = con.sock
-        sock.data = ['HTTP/1.1 200 OK\r\n',
-                     'Server: BogusServer 1.0\r\n',
-                     'transfer-encoding: chunked',
-                     '\r\n\r\n',
-                     chunkedblock('hi '),
-                     ] + list(chunkedblock('there')) + [
-                     chunkedblock(''),
+        sock.data = [b'HTTP/1.1 200 OK\r\n',
+                     b'Server: BogusServer 1.0\r\n',
+                     b'transfer-encoding: chunked',
+                     b'\r\n\r\n',
+                     chunkedblock(b'hi '),
+                     ] + tricklebytes(chunkedblock(b'there')) + [
+                     chunkedblock(b''),
                      ]
         con.request('GET', '/')
         resp = con.getresponse()
-        for amt, expect in [(1, 'h'), (5, 'i the'), (100, 're')]:
+        for amt, expect in [(1, b'h'), (5, b'i the'), (100, b're')]:
             self.assertEqual(expect, resp.read(amt))
 
     def testChunkedDownloadBadEOL(self):
         con = httpplus.HTTPConnection('1.2.3.4:80')
         con._connect({})
         sock = con.sock
-        sock.data = ['HTTP/1.1 200 OK\n',
-                     'Server: BogusServer 1.0\n',
-                     'transfer-encoding: chunked',
-                     '\n\n',
-                     chunkedblock('hi ', eol='\n'),
-                     chunkedblock('there', eol='\n'),
-                     chunkedblock('', eol='\n'),
+        sock.data = [b'HTTP/1.1 200 OK\n',
+                     b'Server: BogusServer 1.0\n',
+                     b'transfer-encoding: chunked',
+                     b'\n\n',
+                     chunkedblock(b'hi ', eol=b'\n'),
+                     chunkedblock(b'there', eol=b'\n'),
+                     chunkedblock(b'', eol=b'\n'),
                      ]
         con.request('GET', '/')
-        self.assertStringEqual('hi there', con.getresponse().read())
+        self.assertStringEqual(b'hi there', con.getresponse().read())
 
     def testChunkedDownloadPartialChunkBadEOL(self):
         con = httpplus.HTTPConnection('1.2.3.4:80')
         con._connect({})
         sock = con.sock
-        sock.data = ['HTTP/1.1 200 OK\n',
-                     'Server: BogusServer 1.0\n',
-                     'transfer-encoding: chunked',
-                     '\n\n',
-                     chunkedblock('hi ', eol='\n'),
-                     ] + list(chunkedblock('there\n' * 5, eol='\n')) + [
-                         chunkedblock('', eol='\n')]
+        sock.data = [b'HTTP/1.1 200 OK\n',
+                     b'Server: BogusServer 1.0\n',
+                     b'transfer-encoding: chunked',
+                     b'\n\n',
+                     chunkedblock(b'hi ', eol=b'\n'),
+                     ] + tricklebytes(chunkedblock(
+                         b'there\n' * 5, eol=b'\n')) + [
+                             chunkedblock(b'', eol=b'\n')]
         con.request('GET', '/')
-        self.assertStringEqual('hi there\nthere\nthere\nthere\nthere\n',
+        self.assertStringEqual(b'hi there\nthere\nthere\nthere\nthere\n',
                                con.getresponse().read())
 
     def testChunkedDownloadPartialChunk(self):
         con = httpplus.HTTPConnection('1.2.3.4:80')
         con._connect({})
         sock = con.sock
-        sock.data = ['HTTP/1.1 200 OK\r\n',
-                     'Server: BogusServer 1.0\r\n',
-                     'transfer-encoding: chunked',
-                     '\r\n\r\n',
-                     chunkedblock('hi '),
-                     ] + list(chunkedblock('there\n' * 5)) + [chunkedblock('')]
+        sock.data = [b'HTTP/1.1 200 OK\r\n',
+                     b'Server: BogusServer 1.0\r\n',
+                     b'transfer-encoding: chunked',
+                     b'\r\n\r\n',
+                     chunkedblock(b'hi '),
+                     ] + tricklebytes(chunkedblock(b'there\n' * 5)) + [
+                         chunkedblock(b'')]
         con.request('GET', '/')
-        self.assertStringEqual('hi there\nthere\nthere\nthere\nthere\n',
+        self.assertStringEqual(b'hi there\nthere\nthere\nthere\nthere\n',
                                con.getresponse().read())
 
     def testChunkedDownloadEarlyHangup(self):
         con = httpplus.HTTPConnection('1.2.3.4:80')
         con._connect({})
         sock = con.sock
-        broken = chunkedblock('hi'*20)[:-1]
-        sock.data = ['HTTP/1.1 200 OK\r\n',
-                     'Server: BogusServer 1.0\r\n',
-                     'transfer-encoding: chunked',
-                     '\r\n\r\n',
+        broken = chunkedblock(b'hi'*20)[:-1]
+        sock.data = [b'HTTP/1.1 200 OK\r\n',
+                     b'Server: BogusServer 1.0\r\n',
+                     b'transfer-encoding: chunked',
+                     b'\r\n\r\n',
                      broken,
                      ]
         sock.close_on_empty = True

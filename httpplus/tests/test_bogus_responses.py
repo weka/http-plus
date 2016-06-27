@@ -49,23 +49,23 @@ class SimpleHttpTest(util.HttpTestBase, unittest.TestCase):
     def bogusEOL(self, eol):
         con = httpplus.HTTPConnection('1.2.3.4:80')
         con._connect({})
-        con.sock.data = ['HTTP/1.1 200 OK%s' % eol,
-                         'Server: BogusServer 1.0%s' % eol,
-                         'Content-Length: 10',
+        con.sock.data = [b'HTTP/1.1 200 OK%s' % eol,
+                         b'Server: BogusServer 1.0%s' % eol,
+                         b'Content-Length: 10',
                          eol * 2,
-                         '1234567890']
+                         b'1234567890']
         con.request('GET', '/')
 
-        expected_req = ('GET / HTTP/1.1\r\n'
-                        'Host: 1.2.3.4\r\n'
-                        'accept-encoding: identity\r\n\r\n')
+        expected_req = (b'GET / HTTP/1.1\r\n'
+                        b'Host: 1.2.3.4\r\n'
+                        b'accept-encoding: identity\r\n\r\n')
 
-        self.assertEqual(('1.2.3.4', 80), con.sock.sa)
+        self.assertEqual((b'1.2.3.4', 80), con.sock.sa)
         self.assertEqual(expected_req, con.sock.sent)
-        self.assertEqual('1234567890', con.getresponse().read())
+        self.assertEqual(b'1234567890', con.getresponse().read())
 
     def testOnlyLinefeed(self):
-        self.bogusEOL('\n')
+        self.bogusEOL(b'\n')
 
     def testOnlyCarriageReturn(self):
-        self.bogusEOL('\r')
+        self.bogusEOL(b'\r')
