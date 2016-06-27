@@ -190,6 +190,12 @@ class HttpTestBase(object):
                                     'see stdout for details'))
             # pylint: enable=no-member
         except:
+            # difflib is easiest on strings in Python 3, so just
+            # always compare strings here.
+            if isinstance(l, bytes):
+                l = l.decode('ascii')
+            if isinstance(r, bytes):
+                r = r.decode('ascii')
             add_nl = lambda li: [x + '\n' for x in li]
             print('failed expectation:')
             print(''.join(difflib.unified_diff(
