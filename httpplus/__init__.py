@@ -778,7 +778,7 @@ class HTTPConnection(object):
                     # data if the server is still sending us content.
                     continue
                 except socket.error as e:
-                    if e[0] != errno.EPIPE and not was_first:
+                    if e.errno != errno.EPIPE and not was_first:
                         raise
 
             # outgoing data
