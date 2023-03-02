@@ -576,7 +576,7 @@ class HTTPConnection(object):
             assert path[0:1] == b'/', 'path must start with a /'
             path = b'http://%s%s' % (hdrhost, path)
         outgoing = [b'%s %s %s%s' % (method, path, http_ver, EOL)]
-        headers[b'host'] = (b'Host', hdrhost)
+        headers['host'] = (b'Host', hdrhost)
         headers[HDR_ACCEPT_ENCODING] = (HDR_ACCEPT_ENCODING, 'identity')
         for hdr, val in sorted((_ensurebytes(h), _ensurebytes(v))
                                for h, v in headers.values()):
